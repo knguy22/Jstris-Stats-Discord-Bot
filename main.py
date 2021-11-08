@@ -1,6 +1,5 @@
 import discord
-from jstrisuser import user_all_stats
-from discord.ext import commands
+from jstrisuser import UserAllStats
 
 # client = commands.Bot( command_prefix=" / " )
 
@@ -13,6 +12,7 @@ from discord.ext import commands
 # async def on_message(message):
 #           if message.content == 'h':
 #               await message.channel.send('bruh')
+
 
 class MyClient(discord.Client):
     async def on_connect(self):
@@ -31,7 +31,4 @@ class MyClient(discord.Client):
 
 
 if __name__ == "__main__":
-    p = user_all_stats(username= "Riviclia", game= '3', mode= '3')
-    print(p.all_stats)
-    # client = MyClient()
-    # client.run('OTA2NzEyOTE0Njc1Nzg5ODU1.YYcoNA.K2uerr4Q3kwY3Rj3RnLWTemZNbQ')
+    pass

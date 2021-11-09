@@ -1,10 +1,13 @@
 import requests
 import time
+import aiohttp
 
 # Returns all replay data of a username's specific gamemode
 # game: 1 = sprint, 3 = cheese, 4 = survival, 5 = ultra, 7 = 20TSD, 8 = PC Mode
 # mode: Sprint/Cheese: 1 = 40L/10L, 2 = 20L/18L, 3 = 100L, 4 = 1000L
 #   for any other game, mode should be 1
+
+# To do; add sorting by time
 
 
 class UserAllStats:
@@ -14,22 +17,38 @@ class UserAllStats:
     username = ""
     game = ""
     mode = ""
-    my_session = requests.session
+    period = ""
+    my_session = None
+    has_error = False
+    error_message = ""
 
-    def __init__(self, username, game, mode='1'):
+    def __init__(self, username, game, mode='1', period='0'):
+        self.all_stats = []
         self.username = username
         self.game = game
         self.mode = mode
+        self.period = period
         self.my_session = requests.session()
-        self.all_stats = []
 
-        self.data_criteria_init()
+        self.check_username()
 
-        self.username_all_replay_stats()
+        if self.has_error is False:
+            self.data_criteria_init()
+            self.username_all_replay_stats()
+            self.duplicate_deleter()
+            self.check_has_games()
 
-        self.duplicate_deleter()
+    def check_has_games(self):
+        if len(self.all_stats) == 0:
+            self.has_error = True
+            self.error_message = "{}: No played games".format(self.username)
 
-        pass
+    def check_username(self):
+        my_url = "https://jstris.jezevec10.com/u/{}".format(self.username)
+        self.username_leaderboard(url=my_url)
+        if "<p>Requested link is invalid.</p>" in self.page_request:
+            self.has_error = True
+            self.error_message = "{}: Not valid username".format(self.username)
 
     def data_criteria_init(self):
         if self.game in ('1', '3', '4'):
@@ -52,6 +71,7 @@ class UserAllStats:
 
     def username_leaderboard(self, url):
         # userleaderboard.txt is how all of the page's data will be stored
+
         time.sleep(1.5)
         r = self.my_session.get(url)
         self.page_request = r.text
@@ -223,6 +243,8 @@ class UserAllStats:
             go_next_page = False
             gamemode = "PC-mode"
 
+
+
         if not isultra:
             current_last_replay = "0"
         else:
@@ -232,14 +254,14 @@ class UserAllStats:
 
             # gets next page
             if lines and go_next_page:
-                url = "https://jstris.jezevec10.com/{}?display=5&user={}&lines={}&page={}".format(
-                    gamemode, self.username, lines, current_last_replay)
+                url = "https://jstris.jezevec10.com/{}?display=5&user={}&lines={}&page={}&time={}".format(
+                    gamemode, self.username, lines, current_last_replay, self.period)
             elif lines is None and go_next_page:
-                url = "https://jstris.jezevec10.com/{}?display=5&user={}&page={}".format(
-                    gamemode, self.username, current_last_replay)
+                url = "https://jstris.jezevec10.com/{}?display=5&user={}&page={}&time={}".format(
+                    gamemode, self.username, current_last_replay, self.period)
             else:
-                url = "https://jstris.jezevec10.com/{}?display=5&user={}".format(
-                    gamemode, self.username)
+                url = "https://jstris.jezevec10.com/{}?display=5&user={}&time={}".format(
+                    gamemode, self.username, self.period)
 
             self.username_leaderboard(url)
 
@@ -399,7 +421,7 @@ def replaystring(s):
         s = s[9:s_end]
     else:
         s = "-"
-    return s
+    return s + " "
 
 
 def tdint(s):
@@ -409,7 +431,7 @@ def tdint(s):
     s = s[s.index("<td><strong>") + 12: s.rindex("</strong></td>")]
     s = s.replace(",", "")
 
-    return s
+    return int(s)
 
 
 def my_int(s):
@@ -427,8 +449,7 @@ def my_float(s):
 
     s_end = s.rindex("</td>")
     s = float(s[4:s_end])
-    s = round(s, 2)
-    return s
+    return round(s, 2)
 
 
 def clock_to_seconds(s):
@@ -459,28 +480,30 @@ if __name__ == "__main__":
 
     # Testing
 
-    a1 = UserAllStats(username="riviclia", game='1', mode='1')
-    print('1', a1.all_stats[0])
-    b1 = UserAllStats(username="riviclia", game='1', mode='2')
-    print('2', b1.all_stats[0])
-    c1 = UserAllStats(username="riviclia", game='1', mode='3')
-    print('3', c1.all_stats[0])
-    d1 = UserAllStats(username="riviclia", game='1', mode='4')
-    print('4', d1.all_stats[0])
-    e = UserAllStats(username="riviclia", game='3', mode='1')
-    print('5', e.all_stats[0])
-    f = UserAllStats(username="riviclia", game='3', mode='2')
-    print('6', f.all_stats[0])
-    g = UserAllStats(username="riviclia", game='3', mode='3')
-    print('7', g.all_stats[0])
-    h = UserAllStats(username="riviclia", game='5', mode='1')
-    print('8', h.all_stats[0])
-    i = UserAllStats(username="riviclia", game='7', mode='1')
-    print('9', i.all_stats[0])
-    j = UserAllStats(username="riviclia", game='8', mode='1')
-    print('10', j.all_stats[0])
-
-    print(a1 == b1)
-    print(b1 == c1)
-    print(i == j)
-    print(j == a1)
+    a1 = UserAllStats('riviclia','3','3','3')
+    print(a1.all_stats, a1.error_message)
+    # a1 = UserAllStats(username="riviclia", game='1', mode='1',period='1')
+    # print('1', a1.all_stats)
+    # b1 = UserAllStats(username="riviclia", game='1', mode='2',period='2')
+    # print('2', b1.all_stats)
+    # c1 = UserAllStats(username="riviclia", game='1', mode='3',period='3')
+    # print('3', c1.all_stats)
+    # d1 = UserAllStats(username="riviclia", game='1', mode='4',period='4')
+    # print('4', d1.all_stats)
+    # e = UserAllStats(username="riviclia", game='3', mode='1')
+    # print('5', e.all_stats[0])
+    # f = UserAllStats(username="riviclia", game='3', mode='2')
+    # print('6', f.all_stats[0])
+    # g = UserAllStats(username="riviclia", game='3', mode='3')
+    # print('7', g.all_stats[0])
+    # h = UserAllStats(username="riviclia", game='5', mode='1')
+    # print('8', h.all_stats[0])
+    # i = UserAllStats(username="riviclia", game='7', mode='1')
+    # print('9', i.all_stats[0])
+    # j = UserAllStats(username="riviclia", game='8', mode='1')
+    # print('10', j.all_stats[0])
+    #
+    # print(a1 == b1)
+    # print(b1 == c1)
+    # print(i == j)
+    # print(j == a1)

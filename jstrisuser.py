@@ -1,6 +1,6 @@
 import requests
 import time
-import aiohttp
+
 
 # Returns all replay data of a username's specific gamemode
 # game: 1 = sprint, 3 = cheese, 4 = survival, 5 = ultra, 7 = 20TSD, 8 = PC Mode
@@ -72,10 +72,11 @@ class UserAllStats:
     def username_leaderboard(self, url):
         # userleaderboard.txt is how all of the page's data will be stored
 
-        time.sleep(1.5)
+        print(url)
         r = self.my_session.get(url)
         self.page_request = r.text
         self.file_treater()
+        time.sleep(1)
 
     def file_treater(self):
 
@@ -208,7 +209,7 @@ class UserAllStats:
 
     def username_all_replay_stats(self):
 
-        isultra = False
+        isultraorsurvival = False
         lines = None
         go_next_page = True
         gamemode = ''
@@ -233,8 +234,9 @@ class UserAllStats:
                 lines = "100L"
         elif self.game == "4":
             gamemode = "survival"
+            isultraorsurvival = True
         elif self.game == "5":
-            isultra = True
+            isultraorsurvival = True
             gamemode = "ultra"
         elif self.game == "7":
             go_next_page = False
@@ -243,9 +245,7 @@ class UserAllStats:
             go_next_page = False
             gamemode = "PC-mode"
 
-
-
-        if not isultra:
+        if not isultraorsurvival:
             current_last_replay = "0"
         else:
             current_last_replay = "10000000000000000"
@@ -480,7 +480,7 @@ if __name__ == "__main__":
 
     # Testing
 
-    a1 = UserAllStats('riviclia','3','3','3')
+    a1 = UserAllStats('jorge', '1', '2', '1')
     print(a1.all_stats, a1.error_message)
     # a1 = UserAllStats(username="riviclia", game='1', mode='1',period='1')
     # print('1', a1.all_stats)

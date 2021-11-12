@@ -23,6 +23,9 @@ class UserAllStats:
     error_message = ""
 
     def __init__(self, username, game, mode='1', period='0'):
+
+        print(username, game, mode, period)
+
         self.all_stats = []
         self.username = username
         self.game = game
@@ -290,20 +293,13 @@ class UserAllStats:
 
 def userstring(s):
     """
-
     Input:
-
         string: {}</a> where {} is username
-
     Output:
-
         string: username
-
     Ex:
-
         Input: streasure</a>
         Output: streasure
-
     """
     endindex = s.index("</a>")
     usernamestring = s[: endindex]
@@ -314,21 +310,14 @@ def timestring(s):
 
     """
     Input:
-
         string:
             <td><strong>1:47.<span class="time-mil">171</span></strong></td>
-
             example without any milliseconds:
                 <td><strong>3:27</strong></td>
-
             example without minutes:
                 <td><strong>2.798</strong></td>
-
-
     Output:
-
         float: time in seconds rounded to 3 digits
-
     """
 
     s = s.replace('<strong>', '')
@@ -391,16 +380,11 @@ def the_string(s):
 
     """
        Input:
-
            string
             Ex: <td>2020-08-11 18:06:53</td>
-
-
        Output:
-
            string:
            Ex: 2020-08-11 18:06:53
-
        """
 
     # example
@@ -455,14 +439,9 @@ def my_float(s):
 def clock_to_seconds(s):
     """
     Input:
-
         string: {a}:{b}.{c} where a = minutes, b = seconds, c = milliseconds rounded to 3 digits
-
-
     Output:
-
         float: time in seconds
-
     """
     # format
     # 1:43.365

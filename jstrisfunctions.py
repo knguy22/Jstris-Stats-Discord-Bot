@@ -107,7 +107,9 @@ def period_str_to_int(my_str):
         return "3"
     elif my_str == "year":
         return '4'
-    return '0'
+    if my_str == 'alltime':
+        return '0'
+    return False
 
 
 def least_most_param_init(my_param, game):
@@ -151,19 +153,48 @@ def gamemode_init(my_str):
     elif my_str == "pcmode":
         return {"game": '8', "mode": "1"}
     else:
-        return None
+        return False
 
 
-class Parameter_Init:
+class ParameterInit:
     valid_params = True
     game = ""
     period = ""
     mode = ""
+    param = ""
 
     def __init__(self, my_parameter, period: str, gamemode: str):
         if not least_most_param_init(my_parameter, gamemode):
             self.valid_params = False
+        self.param = my_parameter
         self.period = period_str_to_int(period)
         a = gamemode_init(gamemode)
         self.game = a["game"]
         self.mode = a["mode"]
+
+
+def parameter_init(my_tuple):
+    gamemode = False
+    period = False
+    my_parameter = False
+
+    for i in my_tuple:
+        if gamemode_init(i):
+            gamemode = i
+        if period_str_to_int(i):
+            period = i
+
+    for i in my_tuple:
+        if least_most_param_init(i, gamemode):
+            my_parameter = i
+
+    if not gamemode:
+        gamemode = "sprint"
+
+    if not period:
+        period = "alltime"
+
+    if not my_parameter:
+        my_parameter = "time"
+
+    return ParameterInit(my_parameter, period, gamemode)

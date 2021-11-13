@@ -9,6 +9,10 @@ import time
 
 # To do; add sorting by time
 
+class UserFrontPage:
+    def __init__(self):
+        pass
+
 
 class UserAllStats:
     all_stats = []
@@ -23,8 +27,6 @@ class UserAllStats:
     error_message = ""
 
     def __init__(self, username, game, mode='1', period='0'):
-
-        print(username, game, mode, period)
 
         self.all_stats = []
         self.username = username
@@ -207,6 +209,14 @@ class UserAllStats:
                     else:
                         index += 1
                     d += 1
+
+                old_dict = current_dict
+                current_dict = {}
+                for i in old_dict:
+                    if i != "date":
+                        current_dict[i] = old_dict[i]
+                    else:
+                        current_dict["date (CET)"] = old_dict[i]
 
                 self.all_stats.append(current_dict)
 
@@ -459,8 +469,12 @@ if __name__ == "__main__":
 
     # Testing
 
-    a1 = UserAllStats('jorge', '1', '2', '1')
-    print(a1.all_stats, a1.error_message)
+    # a1 = UserAllStats('jorge', '1', '2', '1')
+    # print(a1.all_stats, a1.error_message)
+    a = requests.get("https://jstris.jezevec10.com/u/TrueBulge")
+    print(a.text)
+    with open("asdf.txt", 'w') as f:
+        f.writelines(a.text)
     # a1 = UserAllStats(username="riviclia", game='1', mode='1',period='1')
     # print('1', a1.all_stats)
     # b1 = UserAllStats(username="riviclia", game='1', mode='2',period='2')

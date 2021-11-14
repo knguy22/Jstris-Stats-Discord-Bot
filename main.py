@@ -2,6 +2,8 @@ import discord
 from jstrisuser import UserAllStats
 import jstrisfunctions
 from discord.ext import commands
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 intents = discord.Intents.default()
 intents.members = True
@@ -27,7 +29,10 @@ async def least(ctx, username, *args):
     if not my_ps.valid_params:
         await ctx.send("Invalid parameter")
     init_message = await ctx.send("Searching {}'s games now".format(username))
-    searched_games = UserAllStats(username, my_ps.game, my_ps.mode, my_ps.period)
+    loop = asyncio.get_event_loop()
+    searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
+                                                UserAllStats,
+                                                username, my_ps.game, my_ps.mode, my_ps.period)
     await init_message.delete()
     if searched_games.has_error is True:
         await ctx.send(searched_games.error_message)
@@ -43,7 +48,10 @@ async def most(ctx, username: str, *args):
     if not my_ps.valid_params:
         await ctx.send("Invalid parameter")
     init_message = await ctx.send("Searching {}'s games now".format(username))
-    searched_games = UserAllStats(username, my_ps.game, my_ps.mode, my_ps.period)
+    loop = asyncio.get_event_loop()
+    searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
+                                                UserAllStats,
+                                                username, my_ps.game, my_ps.mode, my_ps.period)
     await init_message.delete()
     if searched_games.has_error is True:
         await ctx.send(searched_games.error_message)
@@ -59,7 +67,10 @@ async def average(ctx, username: str, *args):
     if not my_ps.valid_params:
         await ctx.send("Invalid parameter")
     init_message = await ctx.send("Searching {}'s games now".format(username))
-    searched_games = UserAllStats(username, my_ps.game, my_ps.mode, my_ps.period)
+    loop = asyncio.get_event_loop()
+    searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
+                                                UserAllStats,
+                                                username, my_ps.game, my_ps.mode, my_ps.period)
     await init_message.delete()
     if searched_games.has_error is True:
         await ctx.send(searched_games.error_message)
@@ -74,7 +85,10 @@ async def numgames(ctx, username: str, *args):
     # my_ps = ParameterInit(my_parameter, period, gamemode)
     my_ps = jstrisfunctions.parameter_init(args)
     init_message = await ctx.send("Searching {}'s games now".format(username))
-    searched_games = UserAllStats(username, my_ps.game, my_ps.mode, my_ps.period)
+    loop = asyncio.get_event_loop()
+    searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
+                                                UserAllStats,
+                                                username, my_ps.game, my_ps.mode, my_ps.period)
     await init_message.delete()
     if searched_games.has_error is True:
         await ctx.send(searched_games.error_message)
@@ -87,12 +101,15 @@ async def numgames(ctx, username: str, *args):
 async def sub300(ctx, username, period="alltime"):
     init_message = await ctx.send("Searching {}'s games now".format(username))
     period = jstrisfunctions.period_str_to_int(period)
-    searched_games = UserAllStats(username, "3", "3", period)
+    loop = asyncio.get_event_loop()
+    searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
+                                                UserAllStats,
+                                                username, "3", "3", period)
     await init_message.delete()
     if searched_games.has_error is True:
         await ctx.send(searched_games.error_message)
     else:
-        await ctx.send("{} sub 300s".format(jstrisfunctions.sub300(searched_games.all_stats)))
+        await ctx.send("{} has {} sub 300s".format(username, jstrisfunctions.sub300(searched_games.all_stats)))
 
 
 async def replay_send(ctx, my_ps):

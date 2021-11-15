@@ -127,7 +127,8 @@ async def vs(ctx, username, offset=10):
     await init_message.delete()
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
-        await ctx.send("Invalid username: {}".format(username))
+        # await ctx.send("Invalid username: {}".format(username))
+        await ctx.send(searched_games.error_message)
         return None
 
     # Calculates averages
@@ -164,7 +165,8 @@ async def allmatchups(ctx, username):
     await init_message.delete()
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
-        await ctx.send("Invalid username: {}".format(username))
+        # await ctx.send("Invalid username: {}".format(username))
+        await ctx.send(searched_games.error_message)
         return None
     list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
 
@@ -201,7 +203,8 @@ async def vsmatchup(ctx, username, opponent):
     await init_message.delete()
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
-        await ctx.send("Invalid username: {}".format(username))
+        # await ctx.send("Invalid username: {}".format(username))
+        await ctx.send(searched_games.error_message)
         return None
     list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
     embed = await embed_init(username)

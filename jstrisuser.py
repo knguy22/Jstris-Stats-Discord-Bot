@@ -40,8 +40,9 @@ class UserLiveGames:
 
         self.check_username()
         if self.has_error is False:
+            print('seraching')
             self.username_games()
-        self.check_has_games()
+            self.check_has_games()
 
     def username_games(self):
         """
@@ -63,7 +64,6 @@ class UserLiveGames:
         appends stats for current 50 replays in page; also checks if page is done yet if there are less than 50
         replays in page
         """
-
         for i in list(range(len(self.page_request))):
             cur_dict = self.page_request[i]
             apm = cur_dict['attack'] / cur_dict['gametime'] * 60
@@ -93,7 +93,9 @@ class UserLiveGames:
 
     def check_username(self):
         my_url = "https://jstris.jezevec10.com/api/u/{}/live/games?offset=0".format(self.username)
-        self.username_leaderboard(url=my_url)
+        r = self.my_session.get(my_url)
+        self.page_request = r.json()
+        time.sleep(1)
         if "error" in self.page_request:
             self.has_error = True
             self.error_message = "{}: Not valid username".format(self.username)

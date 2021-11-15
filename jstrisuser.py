@@ -2,17 +2,12 @@ import requests
 import time
 
 
-# Returns all replay data of a username's specific gamemode
-# game: 1 = sprint, 3 = cheese, 4 = survival, 5 = ultra, 7 = 20TSD, 8 = PC Mode
-# mode: Sprint/Cheese: 1 = 40L/10L, 2 = 20L/18L, 3 = 100L, 4 = 1000L
-#   for any other game, mode should be 1
-
-# To do; add sorting by time
-
 # Returns all_stats containing entries of following dict:
-# id, gid, cid, gametime, sent, attack, rep, pcs, players, r1v1, pos, vs, gtime, apm, spm
+# id, gid, cid, gametime, sent, attack, rep, pcs, players, r1v1, pos, vs, gtime, apm, spm, pps
 # Ex: {"id":201211863,"gid":"MX2G04","cid":88899054,"gametime":71.31,"sent":81,
 # "attack":94,"rep":"3","pcs":133,"players":4,"r1v1":0,"pos":1,"vs":"Torp","gtime":"2021-11-08 07:56:19"}
+
+#  If username doesn't exist or there are no games, error will be logged into error_message
 class UserLiveGames:
     all_stats = []
     page_request = []
@@ -25,6 +20,15 @@ class UserLiveGames:
     error_message = ""
 
     def __init__(self, username, num_games=10):
+        """
+
+        :param username: str
+        :param num_games: int
+
+        :return all_stats: (list)
+                parameters from jstris api + apm, spm, pps
+
+        """
         self.username = username
         self.num_games = num_games
         self.all_stats = []
@@ -36,8 +40,14 @@ class UserLiveGames:
         self.check_username()
         if self.has_error is False:
             self.username_games()
+        self.check_has_games()
 
     def username_games(self):
+        """
+
+        iterates through jstris api games until all games are appended to dictionary
+        """
+
         self.offset = 0
         while self.still_searching is True:
             url = "https://jstris.jezevec10.com/api/u/{}/live/games?offset={}".format(self.username, self.offset)
@@ -46,12 +56,21 @@ class UserLiveGames:
             self.offset += 50
 
     def append_stats(self):
+
+        """
+
+        appends stats for current 50 replays in page; also checks if page is done yet if there are less than 50
+        replays in page
+        """
+
         for i in list(range(len(self.page_request))):
             cur_dict = self.page_request[i]
             apm = cur_dict['attack'] / cur_dict['gametime'] * 60
             spm = cur_dict['sent'] / cur_dict['gametime'] * 60
+            pps = cur_dict['pcs'] / cur_dict['gametime']
             cur_dict['apm'] = apm
             cur_dict['spm'] = spm
+            cur_dict['pps'] = pps
             self.all_stats.append(cur_dict)
 
             # Checking for offset limit
@@ -60,8 +79,10 @@ class UserLiveGames:
                 break
 
     def username_leaderboard(self, url):
-        # userleaderboard.txt is how all of the page's data will be stored
+        """
 
+        Stores a url's data into self.page_request
+        """
         print(url)
         r = self.my_session.get(url)
         self.page_request = r.json()
@@ -75,21 +96,53 @@ class UserLiveGames:
         if "error" in self.page_request:
             self.has_error = True
             self.error_message = "{}: Not valid username".format(self.username)
+            
+    def check_has_games(self):
+        if len(self.all_stats) == 0:
+            self.has_error = True
+            self.error_message = "{}: No played games".format(self.username)
 
 
-class UserAllStats:
-    all_stats = []
-    data_criteria = {}
-    page_request = ""
+# Returns all replay data of a username's specific gamemode
+# game: 1 = sprint, 3 = cheese, 4 = survival, 5 = ultra, 7 = 20TSD, 8 = PC Mode
+# mode: Sprint/Cheese: 1 = 40L/10L, 2 = 20L/18L, 3 = 100L, 4 = 1000L
+#       for any other game, mode should be 1
+#
+#  Each dictionary contains replay data of a single replay
+#  See data_criteria_init for the entries of the dict
+#
+#  If username doesn't exist or there are no games, error will be logged into error_message
+
+class UserIndivGames:
     username = ""
     game = ""
     mode = ""
     period = ""
+    all_stats = []
+    data_criteria = {}
+    page_request = ""
+    current_last_replay = 0
     my_session = None
     has_error = False
     error_message = ""
 
     def __init__(self, username, game, mode='1', period='0'):
+
+        """
+
+        :param username: str
+        :param game: str of int
+        :param mode: str of int
+        :param period: str of int
+        
+        Ex: username = Truebulge, game = 1, mode = 1, period = 0
+
+        :return allstats: list
+            List of dictionaries ordered by time (least to most time)
+            Each dictionary contains replay data of a single replay
+            See data_criteria_init for the entries of the dict
+
+        """
 
         self.all_stats = []
         self.username = username
@@ -107,12 +160,16 @@ class UserAllStats:
             self.check_has_games()
 
     def username_all_replay_stats(self):
-
-        isultraorsurvival = False
+        """
+        :return: 
+        """
+        is_ultra_or_survival = False
         lines = None
-        go_next_page = True
+        is_20tsd_or_pcmode = False
         gamemode = ''
+
         # converts game and mode to their respective strings to search in url
+        # also checks which url format to search for
         if self.game == "1":
             gamemode = "sprint"
             if self.mode == "2":
@@ -133,31 +190,31 @@ class UserAllStats:
                 lines = "100L"
         elif self.game == "4":
             gamemode = "survival"
-            isultraorsurvival = True
+            is_ultra_or_survival = True
         elif self.game == "5":
-            isultraorsurvival = True
+            is_ultra_or_survival = True
             gamemode = "ultra"
         elif self.game == "7":
-            go_next_page = False
+            is_20tsd_or_pcmode = True
             gamemode = "20TSD"
         elif self.game == "8":
-            go_next_page = False
+            is_20tsd_or_pcmode = True
             gamemode = "PC-mode"
 
-        if not isultraorsurvival:
-            current_last_replay = "0"
+        if not is_ultra_or_survival:
+            self.current_last_replay = "0"
         else:
-            current_last_replay = "10000000000000000"
+            self.current_last_replay = "10000000000000000"
 
         while 1 == 1:
 
             # gets next page
-            if lines and go_next_page:
+            if lines and not is_20tsd_or_pcmode:
                 url = "https://jstris.jezevec10.com/{}?display=5&user={}&lines={}&page={}&time={}".format(
-                    gamemode, self.username, lines, current_last_replay, self.period)
-            elif lines is None and go_next_page:
+                    gamemode, self.username, lines, self.current_last_replay, self.period)
+            elif lines is None and is_20tsd_or_pcmode:
                 url = "https://jstris.jezevec10.com/{}?display=5&user={}&page={}&time={}".format(
-                    gamemode, self.username, current_last_replay, self.period)
+                    gamemode, self.username, self.current_last_replay, self.period)
             else:
                 url = "https://jstris.jezevec10.com/{}?display=5&user={}&time={}".format(
                     gamemode, self.username, self.period)
@@ -167,15 +224,16 @@ class UserAllStats:
             # adds current page replays to list of all other replays so far
             self.page_200_replays_stats()
 
-            # checks if there are no pages left
+            # checks if there are no pages left by checking if there are less than 200 replays in current page
             if not self.check_200_replays():
                 break
-
-            if not go_next_page:
+            
+            # 20tsd and pcmode only store first 200 replays
+            if is_20tsd_or_pcmode:
                 break
 
             # sets up next url
-            current_last_replay = str(self.last_time_in_page())
+            self.current_last_replay = str(self.last_time_in_page())
 
     def page_200_replays_stats(self):
 
@@ -186,7 +244,7 @@ class UserAllStats:
         # uses <td><strong>, which is formatting for time, to find where all the other stats are in reference to each
         # timestamp on page
 
-        # Example format on page (last - is a replay that has been deleted
+        # Example format on page (last - is a replay that has been deleted)
         # streasure</a>
         # </td>
         # <td><strong>288:57.<span class="time-mil">800</span></strong></td>
@@ -208,13 +266,13 @@ class UserAllStats:
                 current_dict = {}
                 for criteria in self.data_criteria:
                     if self.data_criteria[criteria] == 'userstring':
-                        current_dict[criteria] = userstring(self.page_request[index])
+                        current_dict[criteria] = user_string(self.page_request[index])
                     elif self.data_criteria[criteria] == 'timestring':
-                        current_dict[criteria] = timestring(self.page_request[index])
+                        current_dict[criteria] = time_string(self.page_request[index])
                     elif self.data_criteria[criteria] == 'string':
-                        current_dict[criteria] = the_string(self.page_request[index])
+                        current_dict[criteria] = date_string(self.page_request[index])
                     elif self.data_criteria[criteria] == 'replaystring':
-                        current_dict[criteria] = replaystring(self.page_request[index])
+                        current_dict[criteria] = replay_string(self.page_request[index])
                     elif self.data_criteria[criteria] == 'tdint':
                         current_dict[criteria] = tdint(self.page_request[index])
                     elif self.data_criteria[criteria] == 'int':
@@ -251,6 +309,12 @@ class UserAllStats:
             self.error_message = "{}: Not valid username".format(self.username)
 
     def data_criteria_init(self):
+
+        """
+
+        :return: data_criteria: all of the different stats from each replay
+        """
+
         if self.game in ('1', '3', '4'):
             self.data_criteria = {"username": "userstring", "time": "timestring",
                                   "blocks": "int", "pps": "float", "finesse": "int",
@@ -270,7 +334,10 @@ class UserAllStats:
                                   "date": "string", "replay": "replaystring"}
 
     def username_leaderboard(self, url):
-        # userleaderboard.txt is how all of the page's data will be stored
+        """
+
+        Stores a url's data into self.page_request
+        """
 
         print(url)
         r = self.my_session.get(url)
@@ -279,6 +346,10 @@ class UserAllStats:
         time.sleep(1)
 
     def file_treater(self):
+
+        """
+        Handles any page requests fuckery like empty lines and spaces before each line
+        """
 
         self.page_request = self.page_request.splitlines()
         c = 0
@@ -293,6 +364,12 @@ class UserAllStats:
             c += 1
 
     def check_200_replays(self):
+
+        """
+
+        Checks if there are 200 replays on current page
+        """
+
         first_replay = 0
         last_replay = 0
 
@@ -333,6 +410,10 @@ class UserAllStats:
 
     def last_time_in_page(self):
 
+        """
+        :return last time in seconds or score in points of the page
+        """
+
         # returns integers
         # set up stuff, get the file from user_leaderboard_file
 
@@ -350,11 +431,16 @@ class UserAllStats:
             return 0
         else:
             if self.game != "5":
-                return clock_to_seconds(timestring(self.page_request[lasttimeindex]))
+                return clock_to_seconds(time_string(self.page_request[lasttimeindex]))
             elif self.game == "5":
                 return tdint(self.page_request[lasttimeindex])
 
     def duplicate_deleter(self):
+        """
+
+        :return: all_stats with duplicate replays deleted
+        """
+
         c = 0
         while c < len(self.all_stats):
             if self.all_stats[c] == self.all_stats[c - 1]:
@@ -364,7 +450,7 @@ class UserAllStats:
 
 # Jstris html data conversions
 
-def userstring(s):
+def user_string(s):
     """
     Input:
         string: {}</a> where {} is username
@@ -379,7 +465,7 @@ def userstring(s):
     return usernamestring
 
 
-def timestring(s):
+def time_string(s):
 
     """
     Input:
@@ -449,7 +535,7 @@ def timestring(s):
     return "{}:{}.{}".format(minutes, seconds, milliseconds)
 
 
-def the_string(s):
+def date_string(s):
 
     """
        Input:
@@ -468,10 +554,17 @@ def the_string(s):
     return s
 
 
-def replaystring(s):
-    # example
-    # <a href="https://jstris.jezevec10.com/replay/19483494" tar
-    # get="_blank">(V3)<img src="https://jstris.jezevec10.com/res/play.png"></a>
+def replay_string(s):
+
+    """
+       Input:
+           string
+            Ex: <a href="https://jstris.jezevec10.com/replay/19483494" target=
+            "_blank">(V3)<img src="https://jstris.jezevec10.com/res/play.png"></a>
+       Output:
+           string:
+           Ex: https://jstris.jezevec10.com/replay/19483494
+       """
 
     if "https://jstris.jezevec10.com/replay/" in s:
         s_end = s.index("target") - 2
@@ -484,6 +577,13 @@ def replaystring(s):
 def tdint(s):
     # example
     # <td><strong>174,325</strong></td>
+    """
+
+    :param s: string
+            example: <td><strong>174,325</strong></td>
+    :return: string of int
+            example: 174325
+    """
 
     s = s[s.index("<td><strong>") + 12: s.rindex("</strong></td>")]
     s = s.replace(",", "")
@@ -492,8 +592,13 @@ def tdint(s):
 
 
 def my_int(s):
-    # example line
-    # <td>48</td>
+    """
+
+    :param s: string
+            example: <td>48</td>
+    :return: int
+            example: 48
+    """
 
     s_end = s.rindex("</td>")
     s = int(s[4:s_end])
@@ -503,6 +608,13 @@ def my_int(s):
 def my_float(s):
     # example
     # <td>379.15</td>
+    """
+
+    :param s: string
+            example: <td>379.15</td>
+    :return: float
+            example: 379.15
+    """
 
     s_end = s.rindex("</td>")
     s = float(s[4:s_end])
@@ -526,45 +638,3 @@ def clock_to_seconds(s):
     milliseconds = float(s[periodindex:])
 
     return round(60 * minutes + seconds + milliseconds, 3)
-
-
-if __name__ == "__main__":
-
-    # Testing
-
-    # a1 = UserAllStats('jorge', '1', '2', '1')
-    # print(a1.all_stats, a1.error_message)
-    # a = requests.get("https://jstris.jezevec10.com/u/TrueBulge")
-    # print(a.text)
-    # with open("asdf.txt", 'w') as f:
-    #     f.writelines(a.text)
-
-    a = UserLiveGames("truebulge", 100)
-    print(len(a.all_stats))
-    print(a.error_message)
-
-    # a1 = UserAllStats(username="riviclia", game='1', mode='1',period='1')
-    # print('1', a1.all_stats)
-    # b1 = UserAllStats(username="riviclia", game='1', mode='2',period='2')
-    # print('2', b1.all_stats)
-    # c1 = UserAllStats(username="riviclia", game='1', mode='3',period='3')
-    # print('3', c1.all_stats)
-    # d1 = UserAllStats(username="riviclia", game='1', mode='4',period='4')
-    # print('4', d1.all_stats)
-    # e = UserAllStats(username="riviclia", game='3', mode='1')
-    # print('5', e.all_stats[0])
-    # f = UserAllStats(username="riviclia", game='3', mode='2')
-    # print('6', f.all_stats[0])
-    # g = UserAllStats(username="riviclia", game='3', mode='3')
-    # print('7', g.all_stats[0])
-    # h = UserAllStats(username="riviclia", game='5', mode='1')
-    # print('8', h.all_stats[0])
-    # i = UserAllStats(username="riviclia", game='7', mode='1')
-    # print('9', i.all_stats[0])
-    # j = UserAllStats(username="riviclia", game='8', mode='1')
-    # print('10', j.all_stats[0])
-    #
-    # print(a1 == b1)
-    # print(b1 == c1)
-    # print(i == j)
-    # print(j == a1)

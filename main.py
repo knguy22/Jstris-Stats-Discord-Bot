@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import jstrisfunctions
 from jstrisfunctions import ParameterInit
-from jstrisuser import UserAllStats
+from jstrisuser import UserIndivGames
 from jstrisuser import UserLiveGames
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
@@ -30,10 +30,11 @@ async def help(ctx):
 async def least(ctx, username, *args):
     my_ps = ParameterInit(args)
     if not my_ps.valid_params:
+        await ctx.send(ctx.author.mention)
         await ctx.send("Invalid parameter")
-    init_message = await ctx.send("Searching {}'s games now. Please wait.".format(username))
+    init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
-                                                UserAllStats,
+                                                UserIndivGames,
                                                 username, my_ps.game, my_ps.mode, my_ps.period)
     await init_message.delete()
     if searched_games.has_error:
@@ -47,13 +48,15 @@ async def least(ctx, username, *args):
 async def most(ctx, username: str, *args):
     my_ps = ParameterInit(args)
     if not my_ps.valid_params:
+        await ctx.send(ctx.author.mention)
         await ctx.send("Invalid parameter")
-    init_message = await ctx.send("Searching {}'s games now. Please wait.".format(username))
+    init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
-                                                UserAllStats,
+                                                UserIndivGames,
                                                 username, my_ps.game, my_ps.mode, my_ps.period)
     await init_message.delete()
     if searched_games.has_error:
+        await ctx.send(ctx.author.mention)
         await ctx.send(searched_games.error_message)
     else:
         a = jstrisfunctions.most_(searched_games.all_stats, my_ps.param)
@@ -64,16 +67,19 @@ async def most(ctx, username: str, *args):
 async def average(ctx, username: str, *args):
     my_ps = ParameterInit(args)
     if not my_ps.valid_params:
+        await ctx.send(ctx.author.mention)
         await ctx.send("Invalid parameter")
-    init_message = await ctx.send("Searching {}'s games now. Please wait.".format(username))
+    init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
-                                                UserAllStats,
+                                                UserIndivGames,
                                                 username, my_ps.game, my_ps.mode, my_ps.period)
     await init_message.delete()
     if searched_games.has_error:
+        await ctx.send(ctx.author.mention)
         await ctx.send(searched_games.error_message)
     else:
         a = jstrisfunctions.average_(searched_games.all_stats, my_ps.param)
+        await ctx.send(ctx.author.mention)
         await ctx.send("Average for {} is: ".format(my_ps.param) + str(a))
 
 
@@ -81,48 +87,53 @@ async def average(ctx, username: str, *args):
 async def numgames(ctx, username: str, *args):
     # my_ps = ParameterInit(my_parameter, period, gamemode)
     my_ps = ParameterInit(args)
-    init_message = await ctx.send("Searching {}'s games now. Please wait.".format(username))
+    init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
-                                                UserAllStats,
+                                                UserIndivGames,
                                                 username, my_ps.game, my_ps.mode, my_ps.period)
     await init_message.delete()
     if searched_games.has_error:
         await ctx.send(searched_games.error_message)
     else:
         a = len(searched_games.all_stats)
+        await ctx.send(ctx.author.mention)
         await ctx.send("{} games".format(str(a)))
 
 
 @bot.command()
 async def sub300(ctx, username, period="alltime"):
-    init_message = await ctx.send("Searching {}'s games now. Please wait.".format(username))
+    init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
     args = (period, '')
     my_ps = ParameterInit(args)
     period = my_ps.period
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
-                                                UserAllStats,
+                                                UserIndivGames,
                                                 username, "3", "3", period)
     await init_message.delete()
     if searched_games.has_error:
+        await ctx.send(ctx.author.mention)
         await ctx.send(searched_games.error_message)
     else:
+        await ctx.send(ctx.author.mention)
         await ctx.send("{} has {} sub 300s".format(username, jstrisfunctions.sub300(searched_games.all_stats)))
 
 
 @bot.command()
 async def vs(ctx, username, offset=10):
-    init_message = await ctx.send("Searching {}'s games now. Please wait.".format(username))
+    init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
                                                 username, offset)
     await init_message.delete()
     if searched_games.has_error:
+        await ctx.send(ctx.author.mention)
         await ctx.send("Invalid username: {}".format(username))
         return None
 
     # Calculates averages
     apm_avg = jstrisfunctions.livegames_avg(searched_games.all_stats, offset, 'apm')
     spm_avg = jstrisfunctions.livegames_avg(searched_games.all_stats, offset, 'spm')
+    pps_avg = jstrisfunctions.livegames_avg(searched_games.all_stats, offset, 'pps')
     time_avg = jstrisfunctions.livegames_avg(searched_games.all_stats, offset, 'gametime')
     players_avg = jstrisfunctions.livegames_avg(searched_games.all_stats, offset, 'players')
     pos_avg = jstrisfunctions.livegames_avg(searched_games.all_stats, offset, 'pos')
@@ -130,25 +141,29 @@ async def vs(ctx, username, offset=10):
 
     # Discord formatting
     embed = await embed_init(username)
-    embed.add_field(name="apm: ", value=apm_avg, inline=True)
-    embed.add_field(name="spm: ", value=spm_avg, inline=True)
-    embed.add_field(name="time (seconds): ", value=time_avg, inline=True)
-    embed.add_field(name="final position: ", value=pos_avg, inline=True)
-    embed.add_field(name="players: ", value=players_avg, inline=True)
-    embed.add_field(name="games won: ", value=str(won_games), inline=False)
-    embed.add_field(name="number of games: ", value=str(offset), inline=False)
+    embed.add_field(name="**apm:**", value=apm_avg, inline=True)
+    embed.add_field(name="**spm:**", value=spm_avg, inline=True)
+    embed.add_field(name="**pps:**", value=pps_avg, inline=True)
+    embed.add_field(name="**time (seconds):**", value=time_avg, inline=True)
+    embed.add_field(name="**final position:**", value=pos_avg, inline=True)
+    embed.add_field(name="**players:**", value=players_avg, inline=True)
+    embed.add_field(name="**games won:**", value=str(won_games), inline=False)
+    embed.add_field(name="**number of games:**", value=str(offset), inline=False)
+    embed.set_footer(text='All of these values are averages.')
+    await ctx.send(ctx.author.mention)
     await ctx.send(embed=embed)
 
 
 @bot.command()
-async def matchups(ctx, username):
+async def allmatchups(ctx, username):
     offset = 10000000000
-    init_message = await ctx.send("Searching {}'s games now. Please wait.".format(username))
+    init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
                                                 username, offset)
     await init_message.delete()
     if searched_games.has_error:
+        await ctx.send(ctx.author.mention)
         await ctx.send("Invalid username: {}".format(username))
         return None
     list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
@@ -162,42 +177,57 @@ async def matchups(ctx, username):
     for key in list_of_opponents:
         if key is None:
             continue
-        embed.add_field(name='opponent:', value=key, inline=True)
-        embed.add_field(name='games won (by user):', value=list_of_opponents[key]["won"], inline=True)
-        embed.add_field(name='total games:', value=list_of_opponents[key]["games"], inline=True)
+        embed.add_field(name='**opponent:**', value="{}. {}".format(c + 1, key), inline=True)
+        embed.add_field(name='**games won (by user):**', value=list_of_opponents[key]["won"], inline=True)
+        embed.add_field(name='**total games:**', value=list_of_opponents[key]["games"], inline=True)
         c += 1
         if c >= 8:
             break
     embed.set_footer(text='Only the top 8 players with most played games are shown here for technical reasons. '
-                          'For individual match ups, try using ?indivmatchup instead')
+                          'For individual match ups, try using ?indivmatchup instead. Also, Jstris will delete replays'
+                          'over time, and they will not be counted here.')
 
+    await ctx.send(ctx.author.mention)
     await ctx.send(embed=embed)
 
 
 @bot.command()
-async def indivmatchup(ctx, username, opponent):
+async def vsmatchup(ctx, username, opponent):
     offset = 10000000000
-    init_message = await ctx.send("Searching {}'s games now. Please wait.".format(username))
+    init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
                                                 username, offset)
     await init_message.delete()
     if searched_games.has_error:
+        await ctx.send(ctx.author.mention)
         await ctx.send("Invalid username: {}".format(username))
         return None
     list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
     embed = await embed_init(username)
 
+    has_opponent = False
     for key in list_of_opponents:
         if key is None:
             continue
         if key.lower() == opponent.lower():
-            embed.add_field(name='opponent:', value=key, inline=True)
-            embed.add_field(name='games won (by user):', value=list_of_opponents[key]["won"], inline=True)
-            embed.add_field(name='total games:', value=list_of_opponents[key]["games"], inline=True)
+            has_opponent = True
+            embed.add_field(name='**opponent:**', value=key, inline=True)
+            embed.add_field(name='**games won:**', value=list_of_opponents[key]["won"], inline=True)
+            embed.add_field(name='**total games:**', value=list_of_opponents[key]["games"], inline=True)
+            embed.add_field(name='**apm:**', value=list_of_opponents[key]["apm"], inline=True)
+            embed.add_field(name='**spm:**', value=list_of_opponents[key]["spm"], inline=True)
+            embed.add_field(name='**pps:**', value=list_of_opponents[key]["pps"], inline=True)
 
-    embed.set_footer(text='Stats not showing up? Try checking the spelling of the username.')
+    embed.set_footer(text='All stats here are for the player, not the opponent. To find the opponents stats, simply '
+                          'call this command again in reverse. Also, Jstris will delete replays over time, and they '
+                          'will not be counted here')
 
+    if not has_opponent:
+        await ctx.send(ctx.author.mention)
+        await ctx.send("No found games of {} vs {}.".format(username, opponent))
+        return None
+    await ctx.send(ctx.author.mention)
     await ctx.send(embed=embed)
 
 
@@ -206,12 +236,13 @@ async def replay_send(ctx, my_ps):
 
     for i in my_ps:
         if i not in ("username", 'replay'):
-            embed.add_field(name=i+":", value=my_ps[i], inline=False)
+            embed.add_field(name="**{}:**".format(i), value=my_ps[i], inline=False)
     if my_ps["replay"] != "- ":
-        embed.add_field(name="replay:", value=my_ps['replay'], inline=False)
+        embed.add_field(name="**replay:**", value=my_ps['replay'], inline=False)
     else:
-        embed.add_field(name="replay:", value="replay not available", inline=False)
+        embed.add_field(name="**replay:**", value="replay not available", inline=False)
     embed.set_footer(text='Have any suggestions? Please message Truebulge#0358 on Discord!')
+    await ctx.send(ctx.author.mention)
     await ctx.send(embed=embed)
 
 

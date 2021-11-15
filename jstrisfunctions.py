@@ -2,6 +2,11 @@ import jstrisuser
 import datetime
 
 
+# Returns self.game, self.mode, self.period, self.param
+# self.game, self.mode, and self.period are all strings of integers
+# self.param is preserved as a string
+# Ex: self.game = 1, self.mode = 2, self.period = 3
+# self.param = finesse
 class ParameterInit:
     valid_params = True
     gamemode = ""
@@ -23,7 +28,6 @@ class ParameterInit:
         # checking for all settings in my_tuple
 
         for i in my_tuple:
-            print(i)
             self.gamemode_init(i)
             self.period_str_to_int(i)
 
@@ -92,16 +96,18 @@ class ParameterInit:
             a = {"game": '7', "mode": "1"}
         elif my_str == "pcmode":
             a = {"game": '8', "mode": "1"}
-        if a is not False:
+        if a:
             self.game = a["game"]
             self.mode = a["mode"]
 
     def default_settings(self):
         if self.gamemode == "":
-            self.gamemode = "sprint"
+            self.game = '1'
+            self.mode = '1'
 
         if self.period == "":
             self.period = "alltime"
+            self.period = 0
 
         if self.param == "":
             if self.gamemode in ('ultra', 'Ultra'):
@@ -218,23 +224,6 @@ def num_games(list_of_runs):
     return len(list_of_runs)
 
 
-# def apm(list_of_games, offset):
-#     c = 0
-#     apm_sum = 0
-#     while c < offset:
-#         apm_sum += list_of_games[c]["apm"]
-#         c += 1
-#     return apm_sum/offset
-#
-#
-# def spm(list_of_games, offset):
-#     c = 0
-#     spm_sum = 0
-#     while c < offset:
-#         spm_sum += list_of_games[c]["spm"]
-#         c += 1
-#     return spm_sum / offset
-
 def livegames_avg(list_of_games, offset, param):
     c = 0
     summation = 0
@@ -265,14 +254,22 @@ def opponents_matchups(list_of_games):
     while c < len(list_of_games):
         if list_of_games[c]['players'] == 2:
             if list_of_games[c]['vs'] not in list_of_opponents:
-                list_of_opponents[list_of_games[c]['vs']] = {"games": 1, "won": 0}
+                list_of_opponents[list_of_games[c]['vs']] = {"games": 1, "won": 0, "apm": 0, "spm": 0, "pps": 0}
             else:
                 list_of_opponents[list_of_games[c]['vs']]['games'] += 1
 
             if list_of_games[c]['pos'] == 1:
                 list_of_opponents[list_of_games[c]['vs']]['won'] += 1
+            list_of_opponents[list_of_games[c]['vs']]['apm'] += list_of_games[c]['apm']
+            list_of_opponents[list_of_games[c]['vs']]['spm'] += list_of_games[c]['spm']
+            list_of_opponents[list_of_games[c]['vs']]['pps'] += list_of_games[c]['pps']
+
         c += 1
 
-    # return list_of_opponents
-    return dict(sorted(list_of_opponents.items(), key= lambda x: x[1]['games'], reverse=True))
+    for key in list_of_opponents:
+        list_of_opponents[key]['apm'] = round(list_of_opponents[key]['apm'] / list_of_opponents[key]['games'], 2)
+        list_of_opponents[key]['spm'] = round(list_of_opponents[key]['spm'] / list_of_opponents[key]['games'], 2)
+        list_of_opponents[key]['pps'] = round(list_of_opponents[key]['pps'] / list_of_opponents[key]['games'], 2)
 
+    # return list_of_opponents
+    return dict(sorted(list_of_opponents.items(), key=lambda x: x[1]['games'], reverse=True))

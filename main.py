@@ -159,9 +159,10 @@ async def matchups(ctx, username):
     embed = await embed_init(username)
 
     c = 0
-    print(list_of_opponents)
     for key in list_of_opponents:
-        embed.add_field(name='username:', value=key, inline=True)
+        if key is None:
+            continue
+        embed.add_field(name='opponent:', value=key, inline=True)
         embed.add_field(name='games won (by user):', value=list_of_opponents[key]["won"], inline=True)
         embed.add_field(name='total games:', value=list_of_opponents[key]["games"], inline=True)
         c += 1
@@ -170,12 +171,11 @@ async def matchups(ctx, username):
     embed.set_footer(text='Only the top 8 players with most played games are shown here for technical reasons. '
                           'For individual match ups, try using ?indivmatchup instead')
 
-    # print(stuff)
     await ctx.send(embed=embed)
 
 
 @bot.command()
-async def indivmatchups(ctx, username):
+async def indivmatchup(ctx, username, opponent):
     offset = 10000000000
     init_message = await ctx.send("Searching {}'s games now. Please wait.".format(username))
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
@@ -189,10 +189,16 @@ async def indivmatchups(ctx, username):
     embed = await embed_init(username)
 
     for key in list_of_opponents:
-        if key == username:
-            embed.add_field(name='username:', value=key, inline=True)
+        if key is None:
+            continue
+        if key.lower() == opponent.lower():
+            embed.add_field(name='opponent:', value=key, inline=True)
             embed.add_field(name='games won (by user):', value=list_of_opponents[key]["won"], inline=True)
             embed.add_field(name='total games:', value=list_of_opponents[key]["games"], inline=True)
+
+    embed.set_footer(text='Stats not showing up? Try checking the spelling of the username.')
+
+    await ctx.send(embed=embed)
 
 
 async def replay_send(ctx, my_ps):

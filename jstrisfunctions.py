@@ -259,10 +259,6 @@ def first_last_date(list_of_games):
 
 
 def opponents_matchups(list_of_games):
-    # Example tuple list returned
-    # [('octuple8', {'games': 136, 'won': 86}), ('Reminder', {'games': 69, 'won': 42}),
-    # ('Stark163', {'games': 54, 'won': 23}), ('Kerrmunism', {'games': 21, 'won': 11}),
-    # ('Morpheus', {'games': 14, 'won': 1})]
 
     list_of_opponents = {}
     c = 0

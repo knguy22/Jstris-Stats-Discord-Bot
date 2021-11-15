@@ -159,7 +159,6 @@ async def vs(ctx, username, offset=10):
     await init_message.delete()
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
-        # await ctx.send("Invalid username: {}".format(username))
         await ctx.send(searched_games.error_message)
         return None
 
@@ -167,6 +166,9 @@ async def vs(ctx, username, offset=10):
     apm_avg = jstrisfunctions.livegames_avg(searched_games.all_stats, offset, 'apm')
     spm_avg = jstrisfunctions.livegames_avg(searched_games.all_stats, offset, 'spm')
     pps_avg = jstrisfunctions.livegames_avg(searched_games.all_stats, offset, 'pps')
+    weight_apm = round(jstrisfunctions.livegames_weighted_avg(searched_games.all_stats, offset, 'attack')*60, 2)
+    weight_spm = round(jstrisfunctions.livegames_weighted_avg(searched_games.all_stats, offset, 'sent')*60, 2)
+    weight_pps = round(jstrisfunctions.livegames_weighted_avg(searched_games.all_stats, offset, 'pcs'), 2)
     time_avg = jstrisfunctions.livegames_avg(searched_games.all_stats, offset, 'gametime')
     players_avg = jstrisfunctions.livegames_avg(searched_games.all_stats, offset, 'players')
     pos_avg = jstrisfunctions.livegames_avg(searched_games.all_stats, offset, 'pos')
@@ -177,12 +179,15 @@ async def vs(ctx, username, offset=10):
     embed.add_field(name="**apm:**", value=apm_avg, inline=True)
     embed.add_field(name="**spm:**", value=spm_avg, inline=True)
     embed.add_field(name="**pps:**", value=pps_avg, inline=True)
+    embed.add_field(name="**apm (weighted):**", value=weight_apm, inline=True)
+    embed.add_field(name="**spm (weighted):**", value=weight_spm, inline=True)
+    embed.add_field(name="**pps (weighted):**", value=weight_pps, inline=True)
     embed.add_field(name="**time (seconds):**", value=time_avg, inline=True)
     embed.add_field(name="**final position:**", value=pos_avg, inline=True)
     embed.add_field(name="**players:**", value=players_avg, inline=True)
     embed.add_field(name="**games won:**", value=str(won_games), inline=False)
     embed.add_field(name="**number of games:**", value=str(offset), inline=False)
-    embed.set_footer(text='All of these values are averages.')
+    embed.set_footer(text='All of these values are averages. Weighted means weighted by time, not game.')
     await ctx.send(ctx.author.mention)
     await ctx.send(embed=embed)
 
@@ -201,7 +206,6 @@ async def allmatchups(ctx, username):
     await init_message.delete()
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
-        # await ctx.send("Invalid username: {}".format(username))
         await ctx.send(searched_games.error_message)
         return None
     list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
@@ -242,7 +246,6 @@ async def vsmatchup(ctx, username, opponent):
     await init_message.delete()
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
-        # await ctx.send("Invalid username: {}".format(username))
         await ctx.send(searched_games.error_message)
         return None
     list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
@@ -260,10 +263,13 @@ async def vsmatchup(ctx, username, opponent):
             embed.add_field(name='**apm:**', value=list_of_opponents[key]["apm"], inline=True)
             embed.add_field(name='**spm:**', value=list_of_opponents[key]["spm"], inline=True)
             embed.add_field(name='**pps:**', value=list_of_opponents[key]["pps"], inline=True)
+            embed.add_field(name='**apm (weighted):**', value=list_of_opponents[key]["wapm"], inline=True)
+            embed.add_field(name='**spm (weighted):**', value=list_of_opponents[key]["wspm"], inline=True)
+            embed.add_field(name='**pps (weighted):**', value=list_of_opponents[key]["wpps"], inline=True)
 
     embed.set_footer(text='All stats here are for the player, not the opponent. To find the opponents stats, simply '
                           'call this command again in reverse. Also, Jstris will delete replays over time, and they '
-                          'will not be counted here')
+                          'will not be counted here. Weighted means weighted by time, not game.')
 
     if not has_opponent:
         await ctx.send(ctx.author.mention)

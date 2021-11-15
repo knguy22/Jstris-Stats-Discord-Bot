@@ -40,7 +40,6 @@ class UserLiveGames:
 
         self.check_username()
         if self.has_error is False:
-            print('seraching')
             self.username_games()
             self.check_has_games()
 

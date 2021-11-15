@@ -129,12 +129,7 @@ async def vs(ctx, username, offset=10):
     won_games = jstrisfunctions.games_won(searched_games.all_stats, offset)
 
     # Discord formatting
-    embed = discord.Embed(
-        title=username+" (averages)",
-        url="https://jstris.jezevec10.com/u/{}".format(username),
-        color=discord.Colour.red())
-    embed.set_author(name="BadgerBot")
-    embed.set_thumbnail(url="https://i.imgur.com/WDUv9f0.png")
+    embed = await embed_init(username)
     embed.add_field(name="apm: ", value=apm_avg, inline=True)
     embed.add_field(name="spm: ", value=spm_avg, inline=True)
     embed.add_field(name="time (seconds): ", value=time_avg, inline=True)
@@ -161,12 +156,7 @@ async def matchups(ctx, username):
     # Discord formatting stuff
     # Get top 10 opponents
 
-    embed = discord.Embed(
-        title=username,
-        url="https://jstris.jezevec10.com/u/{}".format(username),
-        color=discord.Colour.red())
-    embed.set_author(name="BadgerBot")
-    embed.set_thumbnail(url="https://i.imgur.com/WDUv9f0.png")
+    embed = await embed_init(username)
 
     c = 0
     print(list_of_opponents)
@@ -196,12 +186,7 @@ async def indivmatchups(ctx, username):
         await ctx.send("Invalid username: {}".format(username))
         return None
     list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
-    embed = discord.Embed(
-        title=username,
-        url="https://jstris.jezevec10.com/u/{}".format(username),
-        color=discord.Colour.red())
-    embed.set_author(name="BadgerBot")
-    embed.set_thumbnail(url="https://i.imgur.com/WDUv9f0.png")
+    embed = await embed_init(username)
 
     for key in list_of_opponents:
         if key == username:
@@ -211,12 +196,8 @@ async def indivmatchups(ctx, username):
 
 
 async def replay_send(ctx, my_ps):
-    embed = discord.Embed(
-        title=my_ps['username'],
-        url="https://jstris.jezevec10.com/u/{}".format(my_ps['username']),
-        color=discord.Colour.red())
-    embed.set_author(name="BadgerBot")
-    embed.set_thumbnail(url="https://i.imgur.com/WDUv9f0.png")
+    embed = await embed_init(my_ps['username'])
+
     for i in my_ps:
         if i not in ("username", 'replay'):
             embed.add_field(name=i+":", value=my_ps[i], inline=False)

@@ -13,6 +13,7 @@ description = 'Third party bot to quickly gather Jstris stats on individual play
 
 bot = commands.Bot(command_prefix='?', description=description, intents=intents, help_command=None)
 loop = asyncio.get_event_loop()
+num_processes = 0
 
 
 @bot.event
@@ -28,14 +29,20 @@ async def help(ctx):
 
 @bot.command()
 async def least(ctx, username, *args):
+    if not await num_processes_init(ctx):
+        return None
+
     my_ps = ParameterInit(args)
     if not my_ps.valid_params:
         await ctx.send(ctx.author.mention)
         await ctx.send("Invalid parameter")
+
     init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserIndivGames,
                                                 username, my_ps.game, my_ps.mode, my_ps.period)
+    await num_processes_finish()
+
     await init_message.delete()
     if searched_games.has_error:
         await ctx.send(searched_games.error_message)
@@ -46,14 +53,20 @@ async def least(ctx, username, *args):
 
 @bot.command()
 async def most(ctx, username: str, *args):
+    if not await num_processes_init(ctx):
+        return None
+
     my_ps = ParameterInit(args)
     if not my_ps.valid_params:
         await ctx.send(ctx.author.mention)
         await ctx.send("Invalid parameter")
+
     init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserIndivGames,
                                                 username, my_ps.game, my_ps.mode, my_ps.period)
+    await num_processes_finish()
+
     await init_message.delete()
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
@@ -65,14 +78,19 @@ async def most(ctx, username: str, *args):
 
 @bot.command()
 async def average(ctx, username: str, *args):
+    if not await num_processes_init(ctx):
+        return None
+
     my_ps = ParameterInit(args)
     if not my_ps.valid_params:
         await ctx.send(ctx.author.mention)
         await ctx.send("Invalid parameter")
+
     init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserIndivGames,
                                                 username, my_ps.game, my_ps.mode, my_ps.period)
+    await num_processes_finish()
     await init_message.delete()
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
@@ -86,11 +104,16 @@ async def average(ctx, username: str, *args):
 @bot.command()
 async def numgames(ctx, username: str, *args):
     # my_ps = ParameterInit(my_parameter, period, gamemode)
+    if not await num_processes_init(ctx):
+        return None
+
     my_ps = ParameterInit(args)
     init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserIndivGames,
                                                 username, my_ps.game, my_ps.mode, my_ps.period)
+    await num_processes_finish()
+
     await init_message.delete()
     if searched_games.has_error:
         await ctx.send(searched_games.error_message)
@@ -102,13 +125,18 @@ async def numgames(ctx, username: str, *args):
 
 @bot.command()
 async def sub300(ctx, username, period="alltime"):
+    if not await num_processes_init(ctx):
+        return None
+
     init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
+
     args = (period, '')
     my_ps = ParameterInit(args)
     period = my_ps.period
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserIndivGames,
                                                 username, "3", "3", period)
+    await num_processes_finish()
     await init_message.delete()
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
@@ -120,10 +148,14 @@ async def sub300(ctx, username, period="alltime"):
 
 @bot.command()
 async def vs(ctx, username, offset=10):
+    if not await num_processes_init(ctx):
+        return None
+
     init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
                                                 username, offset)
+    await num_processes_finish()
     await init_message.delete()
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
@@ -157,11 +189,15 @@ async def vs(ctx, username, offset=10):
 
 @bot.command()
 async def allmatchups(ctx, username):
+    if not await num_processes_init(ctx):
+        return None
+
     offset = 10000000000
     init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
                                                 username, offset)
+    await num_processes_finish()
     await init_message.delete()
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
@@ -195,11 +231,14 @@ async def allmatchups(ctx, username):
 
 @bot.command()
 async def vsmatchup(ctx, username, opponent):
+    if not await num_processes_init(ctx):
+        return None
     offset = 10000000000
     init_message = await ctx.send("Searching {}'s games now. This can take a while.".format(username))
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
                                                 username, offset)
+    await num_processes_finish()
     await init_message.delete()
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
@@ -257,6 +296,22 @@ async def embed_init(username):
     embed.set_author(name="BadgerBot")
     embed.set_thumbnail(url="https://i.imgur.com/WDUv9f0.png")
     return embed
+
+
+async def num_processes_init(ctx):
+    global num_processes
+    num_processes += 1
+    if num_processes > 5:
+        num_processes -= 1
+        await ctx.send(ctx.author.mention)
+        await ctx.send("Sorry, currently busy handling other requests. Please try again in a few minutes.")
+        return False
+    return True
+
+
+async def num_processes_finish():
+    global num_processes
+    num_processes -= 1
 
 if __name__ == "__main__":
 

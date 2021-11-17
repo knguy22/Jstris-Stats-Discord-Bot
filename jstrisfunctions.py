@@ -7,7 +7,7 @@ import datetime
 # self.param is preserved as a string
 # Ex: self.game = 1, self.mode = 2, self.period = 3
 # self.param = finesse
-class ParameterInit:
+class IndivParameterInit:
     valid_params = True
     gamemode = ""
     game = ""
@@ -106,6 +106,7 @@ class ParameterInit:
         if self.gamemode == "":
             self.game = '1'
             self.mode = '1'
+            self.gamemode = "sprint"
 
         if self.period == "":
             self.period = "alltime"
@@ -141,10 +142,8 @@ def least_(list_of_runs, my_param):
     if my_param == "time":
         my_param = 'seconds'
         list_of_seconds = list(map(lambda x: jstrisuser.clock_to_seconds(x['time']), list_of_runs))
-        c = 0
-        for my_second in list_of_seconds:
+        for c, my_second in enumerate(list_of_seconds):
             list_of_runs[c]['seconds'] = my_second
-            c += 1
 
     final_run = sorted(list_of_runs, key=lambda x: x[my_param])[0]
 
@@ -161,10 +160,8 @@ def most_(list_of_runs, my_param):
     if my_param == "time":
         my_param = 'seconds'
         list_of_seconds = list(map(lambda x: jstrisuser.clock_to_seconds(x['time']), list_of_runs))
-        c = 0
-        for my_second in list_of_seconds:
+        for c, my_second in enumerate(list_of_seconds):
             list_of_runs[c]['seconds'] = my_second
-            c += 1
 
     final_run = sorted(list_of_runs, key=lambda x: x[my_param])[-1]
 
@@ -179,10 +176,8 @@ def average_(list_of_runs, my_param):
     if my_param == "time":
         my_param = 'seconds'
         list_of_seconds = list(map(lambda x: jstrisuser.clock_to_seconds(x['time']), list_of_runs))
-        c = 0
-        for my_second in list_of_seconds:
+        for c, my_second in enumerate(list_of_seconds):
             list_of_runs[c]['seconds'] = my_second
-            c += 1
 
     stat_average = 0
     for i in list_of_runs:
@@ -237,7 +232,7 @@ def num_games(list_of_runs):
     return len(list_of_runs)
 
 
-def livegames_avg(list_of_games, offset, param):
+def live_games_avg(list_of_games, offset, param):
     c = 0
     summation = 0
     while c < offset:
@@ -246,7 +241,7 @@ def livegames_avg(list_of_games, offset, param):
     return round(summation / offset, 2)
 
 
-def livegames_weighted_avg(list_of_games, offset, param):
+def live_games_weighted_avg(list_of_games, offset, param):
     c = 0
     summation = 0
     time_summation = 0
@@ -273,35 +268,35 @@ def first_last_date(list_of_games):
 
 def opponents_matchups(list_of_games):
 
-    list_of_opponents = {}
+    all_opponents = {}
     c = 0
     while c < len(list_of_games):
         if list_of_games[c]['players'] == 2:
-            if list_of_games[c]['vs'] not in list_of_opponents:
-                list_of_opponents[list_of_games[c]['vs']] = {"games": 1, "won": 0, "apm": 0, "spm": 0, "pps": 0,
-                                                             'wapm': 0, 'wspm': 0, 'wpps': 0, 'time_sum': 0}
+            if list_of_games[c]['vs'] not in all_opponents:
+                all_opponents[list_of_games[c]['vs']] = {"games": 1, "won": 0, "apm": 0, "spm": 0, "pps": 0,
+                                                         'wapm': 0, 'wspm': 0, 'wpps': 0, 'time_sum': 0}
             else:
-                list_of_opponents[list_of_games[c]['vs']]['games'] += 1
+                all_opponents[list_of_games[c]['vs']]['games'] += 1
 
             if list_of_games[c]['pos'] == 1:
-                list_of_opponents[list_of_games[c]['vs']]['won'] += 1
-            list_of_opponents[list_of_games[c]['vs']]['apm'] += list_of_games[c]['apm']
-            list_of_opponents[list_of_games[c]['vs']]['spm'] += list_of_games[c]['spm']
-            list_of_opponents[list_of_games[c]['vs']]['pps'] += list_of_games[c]['pps']
-            list_of_opponents[list_of_games[c]['vs']]['wapm'] += list_of_games[c]['attack']
-            list_of_opponents[list_of_games[c]['vs']]['wspm'] += list_of_games[c]['sent']
-            list_of_opponents[list_of_games[c]['vs']]['wpps'] += list_of_games[c]['pcs']
-            list_of_opponents[list_of_games[c]['vs']]['time_sum'] += list_of_games[c]['gametime']
+                all_opponents[list_of_games[c]['vs']]['won'] += 1
+            all_opponents[list_of_games[c]['vs']]['apm'] += list_of_games[c]['apm']
+            all_opponents[list_of_games[c]['vs']]['spm'] += list_of_games[c]['spm']
+            all_opponents[list_of_games[c]['vs']]['pps'] += list_of_games[c]['pps']
+            all_opponents[list_of_games[c]['vs']]['wapm'] += list_of_games[c]['attack']
+            all_opponents[list_of_games[c]['vs']]['wspm'] += list_of_games[c]['sent']
+            all_opponents[list_of_games[c]['vs']]['wpps'] += list_of_games[c]['pcs']
+            all_opponents[list_of_games[c]['vs']]['time_sum'] += list_of_games[c]['gametime']
 
         c += 1
 
-    for key in list_of_opponents:
-        list_of_opponents[key]['apm'] = round(list_of_opponents[key]['apm'] / list_of_opponents[key]['games'], 2)
-        list_of_opponents[key]['spm'] = round(list_of_opponents[key]['spm'] / list_of_opponents[key]['games'], 2)
-        list_of_opponents[key]['pps'] = round(list_of_opponents[key]['pps'] / list_of_opponents[key]['games'], 2)
-        list_of_opponents[key]['wapm'] = round(list_of_opponents[key]['wapm'] / list_of_opponents[key]['time_sum'] * 60, 2)
-        list_of_opponents[key]['wspm'] = round(list_of_opponents[key]['wspm'] / list_of_opponents[key]['time_sum'] * 60, 2)
-        list_of_opponents[key]['wpps'] = round(list_of_opponents[key]['wpps'] / list_of_opponents[key]['time_sum'], 2)
+    for key in all_opponents:
+        all_opponents[key]['apm'] = round(all_opponents[key]['apm'] / all_opponents[key]['games'], 2)
+        all_opponents[key]['spm'] = round(all_opponents[key]['spm'] / all_opponents[key]['games'], 2)
+        all_opponents[key]['pps'] = round(all_opponents[key]['pps'] / all_opponents[key]['games'], 2)
+        all_opponents[key]['wapm'] = round(all_opponents[key]['wapm'] / all_opponents[key]['time_sum'] * 60, 2)
+        all_opponents[key]['wspm'] = round(all_opponents[key]['wspm'] / all_opponents[key]['time_sum'] * 60, 2)
+        all_opponents[key]['wpps'] = round(all_opponents[key]['wpps'] / all_opponents[key]['time_sum'], 2)
 
-    # return list_of_opponents
-    return dict(sorted(list_of_opponents.items(), key=lambda x: x[1]['games'], reverse=True))
+    # return all_opponents
+    return dict(sorted(all_opponents.items(), key=lambda x: x[1]['games'], reverse=True))

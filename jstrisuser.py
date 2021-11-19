@@ -1,6 +1,7 @@
 import requests
 import time
 from jstrishtml import *
+import datetime
 
 
 # Returns all_stats containing entries of following dict:
@@ -9,33 +10,32 @@ from jstrishtml import *
 # "attack":94,"rep":"3","pcs":133,"players":4,"r1v1":0,"pos":1,"vs":"Torp","gtime":"2021-11-08 07:56:19"}
 
 #  If username doesn't exist or there are no games, error will be logged into error_message
-class UserLiveGames:
-    all_stats = []
-    page_request = []
-    username = ""
-    my_session = None
-    offset = 0
-    num_games = 0
-    still_searching = True
-    has_error = False
-    error_message = ""
 
-    def __init__(self, username, num_games=10):
+class UserLiveGames:
+
+    def __init__(self, username, num_games=10, first_date="0000-00-00 00:00:00", last_date="9999-00-00 00:00:00"):
         """
 
         :param username: str
         :param num_games: int
+        :param first_date: str
+        :param last_date: str
 
         :return all_stats: (list)
-                parameters from jstris api + apm, spm, pps
+                parameters from jstris api + (apm, spm, pps)
 
         """
-        self.username = username
-        self.num_games = num_games
+        self.username: str = username
+        self.num_games: int = num_games
+        self.first_date: str = first_date
+        self.last_date: str = last_date
+
         self.all_stats = []
         self.page_request = [{}]
+        self.offset = 0
         self.still_searching = True
         self.has_error = False
+        self.error_message = ""
         self.my_session = requests.session()
 
         self.check_username()
@@ -49,7 +49,6 @@ class UserLiveGames:
         iterates through jstris api games until all games are appended to dictionary
         """
 
-        self.offset = 0
         while self.still_searching is True:
             url = f"https://jstris.jezevec10.com/api/u/{self.username}/live/games?offset={self.offset}"
             self.username_leaderboard(url)
@@ -65,14 +64,14 @@ class UserLiveGames:
         """
         for i, j in enumerate(self.page_request):
 
-            cur_dict = self.page_request[i]
-            apm = cur_dict['attack'] / cur_dict['gametime'] * 60
-            spm = cur_dict['sent'] / cur_dict['gametime'] * 60
-            pps = cur_dict['pcs'] / cur_dict['gametime']
-            cur_dict['apm'] = apm
-            cur_dict['spm'] = spm
-            cur_dict['pps'] = pps
-            self.all_stats.append(cur_dict)
+            # Checking for first and last date
+
+            # Adding apm, spm, pps and then appending to all stats
+
+            j['apm'] = j['attack'] / j['gametime'] * 60
+            j['spm'] = j['sent'] / j['gametime'] * 60
+            j['pps'] = j['pcs'] / j['gametime']
+            self.all_stats.append(j)
 
             # Checking for offset limit
             if self.num_games <= self.offset + i + 1:
@@ -117,17 +116,6 @@ class UserLiveGames:
 #  If username doesn't exist or there are no games, error will be logged into error_message
 
 class UserIndivGames:
-    username = ""
-    game = ""
-    mode = ""
-    period = ""
-    all_stats = []
-    data_criteria = {}
-    page_request = ""
-    current_last_replay = 0
-    my_session = None
-    has_error = False
-    error_message = ""
 
     def __init__(self, username, game, mode='1', period='0'):
 
@@ -147,12 +135,18 @@ class UserIndivGames:
 
         """
 
+        self.username: str = username
+        self.game: str = game
+        self.mode: str = mode
+        self.period: str = period
+
         self.all_stats = []
-        self.username = username
-        self.game = game
-        self.mode = mode
-        self.period = period
         self.my_session = requests.session()
+        self.page_request = ""
+        self.current_last_replay = ""
+        self.has_error = False
+        self.error_message = ""
+        self.data_criteria = {}
 
         self.check_username()
 
@@ -215,7 +209,7 @@ class UserIndivGames:
             if lines and not is_20tsd_or_pcmode:
                 url = f"https://jstris.jezevec10.com/{gamemode}?display=5&user={self.username}&lines={lines}" \
                       f"&page={self.current_last_replay}&time={self.period}"
-            elif lines is None and is_20tsd_or_pcmode:
+            elif lines is None and not is_20tsd_or_pcmode:
                 url = f"https://jstris.jezevec10.com/{gamemode}?display=5&user={self.username}" \
                       f"&page={self.current_last_replay}&time={self.period}"
             else:
@@ -448,3 +442,8 @@ class UserIndivGames:
             if self.all_stats[c] == self.all_stats[c - 1]:
                 self.all_stats.pop(c)
             c += 1
+
+
+if __name__ == "__main__":
+    h = UserLiveGames("truebulge")
+    print(h.all_stats)

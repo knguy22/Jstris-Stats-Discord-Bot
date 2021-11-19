@@ -2,18 +2,123 @@ import jstrisuser
 import datetime
 
 
+# Returns self.first and self.last as dates in the form of:
+# 2021-10-29 09:25:55
+
+class LiveDateInit:
+
+    def __init__(self, first, last):
+        """
+
+        :param first: str; first date;
+        :param last: str; last date
+        Date must be in calendar format or time ago format
+
+        :return self.first: "%Y-%m-%d %H:%M:%S"
+                self.last:"%Y-%m-%d %H:%M:%S"
+        """
+        self.first: str = first.lower()
+        self.last: str = last.lower()
+        self.has_error = False
+        self.error_message = ""
+
+        if self.check_if_calendar(self.first):
+            self.first = self.calendar_to_date(self.first)
+        else:
+            self.first = self.is_time_ago_to_date(self.first)
+
+        if self.check_if_calendar(self.last):
+            self.last = self.calendar_to_date(self.last)
+        else:
+            self.last = self.is_time_ago_to_date(self.last)
+
+        # Switches first and last if last is before first
+
+        if not self.has_error:
+            self.first_vs_last()
+
+    def calendar_to_date(self, string):
+
+        num_year = datetime.datetime.now().year
+        num_day = '01'
+
+        months_dict = {'january': '01', 'february': '02', 'march': '03', 'april': '04', 'may': '05', 'june': '06',
+                       'july': '07', 'august': '08', 'september': '09', 'october': '10', 'november': '11',
+                       'december': '12'}
+
+        str_list = string.split(" ")
+
+        if str_list[0] in months_dict:
+            num_month = months_dict[str_list[0]]
+        else:
+            self.has_error = True
+            self.error_message = "Error: Not valid date formatting"
+            return None
+
+        if len(str_list) >= 2:
+            num_day = str_list[1][0]
+        if len(str_list) == 3:
+            num_year = str_list[2]
+        if len(num_day) == 1:
+            num_day = "0" + num_day
+        return f"{num_year}-{num_month}-{num_day} 00:00:00"
+
+    def is_time_ago_to_date(self, string):
+        now = datetime.datetime.now()
+        num_days = self.is_time_ago_to_days(string)
+        if num_days is None:
+            self.has_error = True
+            self.error_message = f"Error: Not valid data formatting ({string})"
+            return None
+        my_date = now - datetime.timedelta(days=num_days)
+        my_date = my_date.strftime("%Y-%m-%d %H:%M:%S.%f")[:-7]
+        return my_date
+
+    @staticmethod
+    def is_time_ago_to_days(string):
+        str_list = string.split(" ")
+        num_days = 0
+        num_months = 0
+        days_list = ["days", 'Days', "day", "Day", "DAY", "DAYS"]
+        months_list = ["months", 'Months', "month", "Month", "MONTH", "MONTHS"]
+
+        if not set(str_list) & set(days_list) and not set(str_list) & set(months_list):
+            return None
+
+        for days in days_list:
+            if days in str_list:
+                days_index = str_list.index(days)
+                num_days += int(str_list[days_index - 1])
+
+        for months in months_list:
+            if months in str_list:
+                months_index = str_list.index(months)
+                num_months += int(str_list[months_index - 1]) * 30
+
+        return num_months + num_days
+
+    @staticmethod
+    def check_if_calendar(string):
+        months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october',
+                  'november', 'december']
+        string_list = string.split(" ")
+        is_time_ago = False
+        for value in string_list:
+            if value in months:
+                is_time_ago = True
+        return is_time_ago
+
+    def first_vs_last(self):
+        first = datetime.datetime.strptime(self.first, "%Y-%m-%d %H:%M:%S")
+        last = datetime.datetime.strptime(self.last, "%Y-%m-%d %H:%M:%S")
+        if first > last:
+            self.first, self.last = self.last, self.first
+
+
 # Returns self.game, self.mode, self.period, self.param
-# self.game, self.mode, and self.period are all strings of integers
-# self.param is preserved as a string
 # Ex: self.game = 1, self.mode = 2, self.period = 3
 # self.param = finesse
 class IndivParameterInit:
-    valid_params = True
-    gamemode = ""
-    game = ""
-    period = ""
-    mode = ""
-    param = ""
 
     def __init__(self, my_tuple):
         self.valid_params = True
@@ -200,32 +305,8 @@ def pc_finish_sprint(list_of_runs, mode):
         lines = 1000
 
     for i in list_of_runs:
-        if i["blocks"] == lines*2.5:
+        if i["blocks"] == lines * 2.5:
             return i
-
-
-def recency_filter(list_of_runs, period='alltime'):
-    new_list_of_runs = []
-    my_days = 0
-
-    if period == 'day':
-        my_days = 1
-    elif period == 'week':
-        my_days = 7
-    elif period == 'month':
-        my_days = 30
-    elif period == 'year':
-        my_days = 365
-    elif period == 'alltime':
-        return list_of_runs
-
-    now = datetime.datetime.now()
-    for i in list_of_runs:
-        my_replay = datetime.datetime.strptime(i['date'], "%Y-%m-%d %H:%M:%S")
-        if my_days > (now-my_replay).days:
-            new_list_of_runs.append(i)
-
-    return new_list_of_runs
 
 
 def num_games(list_of_runs):
@@ -269,26 +350,24 @@ def first_last_date(list_of_games):
 def opponents_matchups(list_of_games):
 
     all_opponents = {}
-    c = 0
-    while c < len(list_of_games):
-        if list_of_games[c]['players'] == 2:
-            if list_of_games[c]['vs'] not in all_opponents:
-                all_opponents[list_of_games[c]['vs']] = {"games": 1, "won": 0, "apm": 0, "spm": 0, "pps": 0,
-                                                         'wapm': 0, 'wspm': 0, 'wpps': 0, 'time_sum': 0}
+
+    for opponent in list_of_games:
+        if opponent['players'] == 2:
+            if opponent['vs'] not in all_opponents:
+                all_opponents[opponent['vs']] = {"games": 1, "won": 0, "apm": 0, "spm": 0, "pps": 0,
+                                                 'wapm': 0, 'wspm': 0, 'wpps': 0, 'time_sum': 0}
             else:
-                all_opponents[list_of_games[c]['vs']]['games'] += 1
+                all_opponents[opponent['vs']]['games'] += 1
 
-            if list_of_games[c]['pos'] == 1:
-                all_opponents[list_of_games[c]['vs']]['won'] += 1
-            all_opponents[list_of_games[c]['vs']]['apm'] += list_of_games[c]['apm']
-            all_opponents[list_of_games[c]['vs']]['spm'] += list_of_games[c]['spm']
-            all_opponents[list_of_games[c]['vs']]['pps'] += list_of_games[c]['pps']
-            all_opponents[list_of_games[c]['vs']]['wapm'] += list_of_games[c]['attack']
-            all_opponents[list_of_games[c]['vs']]['wspm'] += list_of_games[c]['sent']
-            all_opponents[list_of_games[c]['vs']]['wpps'] += list_of_games[c]['pcs']
-            all_opponents[list_of_games[c]['vs']]['time_sum'] += list_of_games[c]['gametime']
-
-        c += 1
+            if opponent['pos'] == 1:
+                all_opponents[opponent['vs']]['won'] += 1
+            all_opponents[opponent['vs']]['apm'] += opponent['apm']
+            all_opponents[opponent['vs']]['spm'] += opponent['spm']
+            all_opponents[opponent['vs']]['pps'] += opponent['pps']
+            all_opponents[opponent['vs']]['wapm'] += opponent['attack']
+            all_opponents[opponent['vs']]['wspm'] += opponent['sent']
+            all_opponents[opponent['vs']]['wpps'] += opponent['pcs']
+            all_opponents[opponent['vs']]['time_sum'] += opponent['gametime']
 
     for key in all_opponents:
         all_opponents[key]['apm'] = round(all_opponents[key]['apm'] / all_opponents[key]['games'], 2)
@@ -300,3 +379,11 @@ def opponents_matchups(list_of_games):
 
     # return all_opponents
     return dict(sorted(all_opponents.items(), key=lambda x: x[1]['games'], reverse=True))
+
+
+if __name__ == "__main__":
+    first_date = '5 days'
+    second_date = 'march 5, 2021'
+    h = LiveDateInit(first_date, second_date)
+    print(h.first, h.last)
+    print(h.error_message)

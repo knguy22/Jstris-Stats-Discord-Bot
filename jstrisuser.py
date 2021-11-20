@@ -70,8 +70,13 @@ class UserLiveGames:
         for i, j in enumerate(self.page_request):
 
             # Checking for first and last date
+            if self.page_request[i]['gtime'] is None:
+                continue
+
             current_date = datetime.datetime.strptime(j['gtime'], "%Y-%m-%d %H:%M:%S")
             if i < len(self.page_request) - 1:
+                if self.page_request[i + 1]['gtime'] is None:
+                    continue
                 next_date = datetime.datetime.strptime(self.page_request[i + 1]['gtime'], "%Y-%m-%d %H:%M:%S")
             else:
                 next_date = datetime.datetime.strptime("0001-01-01 00:00:00", "%Y-%m-%d %H:%M:%S")

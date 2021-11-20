@@ -201,11 +201,10 @@ async def allmatchups(ctx, username):
     if not await num_processes_init(ctx):
         return None
 
-    offset = 10000000000
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
-                                                username, offset)
+                                                username)
     await num_processes_finish()
     await init_message.delete()
     if searched_games.has_error:
@@ -243,18 +242,67 @@ async def allmatchups(ctx, username):
 async def vsmatchup(ctx, username, opponent):
     if not await num_processes_init(ctx):
         return None
-    offset = 10000000000
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
+
+    # First do username's games
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
-                                                username, offset)
-    await num_processes_finish()
-    await init_message.delete()
+                                                username)
+
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
         await ctx.send(searched_games.error_message)
         return None
     list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
+    embed1 = await vs_matchup_embed(ctx, username, opponent, list_of_opponents)
+
+    # Second do opponent's games
+    searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
+                                                UserLiveGames,
+                                                opponent, 10000000, searched_games.first_date, searched_games.last_date)
+    if searched_games.has_error:
+        await ctx.send(ctx.author.mention)
+        await ctx.send(searched_games.error_message)
+        return None
+    list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
+    embed2 = await vs_matchup_embed(ctx, opponent, username, list_of_opponents)
+
+    await num_processes_finish()
+    await init_message.delete()
+
+    await ctx.send(ctx.author.mention)
+    await ctx.send(embed=embed1)
+    await ctx.send(embed=embed2)
+
+
+# OTHER METHODS
+
+async def replay_send(ctx, my_ps):
+    embed = await embed_init(my_ps['username'])
+
+    for i in my_ps:
+        if i not in ("username", 'replay'):
+            embed.add_field(name=f"**{i}:**", value=my_ps[i], inline=False)
+    if my_ps["replay"] != "- ":
+        embed.add_field(name="**replay:**", value=my_ps['replay'], inline=False)
+    else:
+        embed.add_field(name="**replay:**", value="replay not available", inline=False)
+    embed.set_footer(text='Have any suggestions? Please message Truebulge#0358 on Discord!')
+    await ctx.send(ctx.author.mention)
+    await ctx.send(embed=embed)
+
+
+async def embed_init(username):
+    embed = discord.Embed(
+        title=username,
+        url=f"https://jstris.jezevec10.com/u/{username}",
+        color=discord.Colour.red())
+    embed.set_author(name="BadgerBot")
+    embed.set_thumbnail(url="https://i.imgur.com/WDUv9f0.png")
+    return embed
+
+
+async def vs_matchup_embed(ctx, username, opponent, list_of_opponents):
     embed = await embed_init(username)
 
     has_opponent = False
@@ -283,34 +331,7 @@ async def vsmatchup(ctx, username, opponent):
         await ctx.send(ctx.author.mention)
         await ctx.send(f"No found games of {username} vs {opponent}.")
         return None
-    await ctx.send(ctx.author.mention)
-    await ctx.send(embed=embed)
 
-
-# OTHER METHODS
-
-async def replay_send(ctx, my_ps):
-    embed = await embed_init(my_ps['username'])
-
-    for i in my_ps:
-        if i not in ("username", 'replay'):
-            embed.add_field(name=f"**{i}:**", value=my_ps[i], inline=False)
-    if my_ps["replay"] != "- ":
-        embed.add_field(name="**replay:**", value=my_ps['replay'], inline=False)
-    else:
-        embed.add_field(name="**replay:**", value="replay not available", inline=False)
-    embed.set_footer(text='Have any suggestions? Please message Truebulge#0358 on Discord!')
-    await ctx.send(ctx.author.mention)
-    await ctx.send(embed=embed)
-
-
-async def embed_init(username):
-    embed = discord.Embed(
-        title=username,
-        url=f"https://jstris.jezevec10.com/u/{username}",
-        color=discord.Colour.red())
-    embed.set_author(name="BadgerBot")
-    embed.set_thumbnail(url="https://i.imgur.com/WDUv9f0.png")
     return embed
 
 

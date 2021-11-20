@@ -13,7 +13,8 @@ import datetime
 
 class UserLiveGames:
 
-    def __init__(self, username, num_games=10, first_date="0001-01-01 00:00:00", last_date="9999-01-01 00:00:00"):
+    def __init__(self, username, num_games=10000000000,
+                 first_date="0001-01-01 00:00:00", last_date="9999-01-01 00:00:00"):
         """
 
         :param username: str
@@ -44,6 +45,7 @@ class UserLiveGames:
         if self.has_error is False:
             self.username_games()
             self.check_has_games()
+            self.first_last_date()
 
     def username_games(self):
         """
@@ -72,7 +74,6 @@ class UserLiveGames:
                 next_date = datetime.datetime.strptime(self.page_request[i + 1]['gtime'], "%Y-%m-%d %H:%M:%S")
             else:
                 next_date = datetime.datetime.strptime("0001-01-01 00:00:00", "%Y-%m-%d %H:%M:%S")
-
 
             if current_date > self.last_date:
                 continue
@@ -122,6 +123,12 @@ class UserLiveGames:
             self.has_error = True
             self.error_message = f"{self.username}: No played games"
 
+    def first_last_date(self):
+        min_time = self.all_stats[-1]["gtime"]
+        max_time = self.all_stats[1]["gtime"]
+
+        self.first_date = str(min_time)
+        self.last_date = str(max_time)
 
 # Returns all replay data of a username's specific gamemode
 # game: 1 = sprint, 3 = cheese, 4 = survival, 5 = ultra, 7 = 20TSD, 8 = PC Mode
@@ -132,6 +139,7 @@ class UserLiveGames:
 #  See data_criteria_init for the entries of the dict
 #
 #  If username doesn't exist or there are no games, error will be logged into error_message
+
 
 class UserIndivGames:
 
@@ -158,7 +166,6 @@ class UserIndivGames:
         self.mode: str = mode
         self.period: str = period
 
-        print(datetime.datetime.now)
         self.all_stats = []
         self.my_session = requests.session()
         self.page_request = ""
@@ -464,5 +471,6 @@ class UserIndivGames:
 
 
 if __name__ == "__main__":
-    h = UserLiveGames("truebulge", num_games=1000000000)
-    print(h.all_stats)
+    h = UserLiveGames("truebulge", num_games=100, last_date='2021-11-1 03:58:21')
+    print(h.first_date, h.last_date)
+    print(len(h.all_stats))

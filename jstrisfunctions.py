@@ -344,30 +344,36 @@ def games_won(list_of_games, offset):
 
 
 def first_last_date(list_of_games):
-    pass
+    min_time = str(list_of_games[-1]["gtime"])
+    max_time = str(list_of_games[1]["gtime"])
+
+    return {"min_time": min_time, "max_time": max_time}
 
 
 def opponents_matchups(list_of_games):
 
     all_opponents = {}
 
-    for opponent in list_of_games:
-        if opponent['players'] == 2:
-            if opponent['vs'] not in all_opponents:
-                all_opponents[opponent['vs']] = {"games": 1, "won": 0, "apm": 0, "spm": 0, "pps": 0,
-                                                 'wapm': 0, 'wspm': 0, 'wpps': 0, 'time_sum': 0}
+    for game in list_of_games:
+        if game['players'] == 2:
+            if game['vs'] not in all_opponents:
+                all_opponents[game['vs']] = {"games": 1, "won": 0, "apm": 0, "spm": 0, "pps": 0,
+                                             'wapm': 0, 'wspm': 0, 'wpps': 0, 'time_sum': 0,
+                                             'min_time': "",
+                                             'max_time': datetime.datetime.strptime(game['gtime'], "%Y-%m-%d %H:%M:%S")}
             else:
-                all_opponents[opponent['vs']]['games'] += 1
+                all_opponents[game['vs']]['games'] += 1
 
-            if opponent['pos'] == 1:
-                all_opponents[opponent['vs']]['won'] += 1
-            all_opponents[opponent['vs']]['apm'] += opponent['apm']
-            all_opponents[opponent['vs']]['spm'] += opponent['spm']
-            all_opponents[opponent['vs']]['pps'] += opponent['pps']
-            all_opponents[opponent['vs']]['wapm'] += opponent['attack']
-            all_opponents[opponent['vs']]['wspm'] += opponent['sent']
-            all_opponents[opponent['vs']]['wpps'] += opponent['pcs']
-            all_opponents[opponent['vs']]['time_sum'] += opponent['gametime']
+            if game['pos'] == 1:
+                all_opponents[game['vs']]['won'] += 1
+            all_opponents[game['vs']]['apm'] += game['apm']
+            all_opponents[game['vs']]['spm'] += game['spm']
+            all_opponents[game['vs']]['pps'] += game['pps']
+            all_opponents[game['vs']]['wapm'] += game['attack']
+            all_opponents[game['vs']]['wspm'] += game['sent']
+            all_opponents[game['vs']]['wpps'] += game['pcs']
+            all_opponents[game['vs']]['time_sum'] += game['gametime']
+            all_opponents[game['vs']]['min_time'] = datetime.datetime.strptime(game['gtime'], "%Y-%m-%d %H:%M:%S")
 
     for key in all_opponents:
         all_opponents[key]['apm'] = round(all_opponents[key]['apm'] / all_opponents[key]['games'], 2)

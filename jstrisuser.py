@@ -45,7 +45,8 @@ class UserLiveGames:
         if self.has_error is False:
             self.username_games()
             self.check_has_games()
-            self.first_last_date()
+            if self.has_error is False:
+                self.first_last_date()
 
     def username_games(self):
         """

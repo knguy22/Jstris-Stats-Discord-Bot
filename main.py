@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import jstrisfunctions
+from jstrisfunctions import LiveDateInit
 from jstrisfunctions import IndivParameterInit
 from jstrisuser import UserIndivGames
 from jstrisuser import UserLiveGames
@@ -197,14 +198,18 @@ async def vs(ctx, username, offset=10):
 
 
 @bot.command()
-async def allmatchups(ctx, username):
+async def allmatchups(ctx, username, first_date="1000 months", last_date="0 days"):
+    date_init = LiveDateInit(first_date, last_date)
+    first_date = date_init.first
+    last_date = date_init.last
+
     if not await num_processes_init(ctx):
         return None
 
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
-                                                username)
+                                                username, 1000000000, first_date, last_date)
     await num_processes_finish()
     await init_message.delete()
     if searched_games.has_error:
@@ -239,7 +244,13 @@ async def allmatchups(ctx, username):
 
 
 @bot.command()
-async def vsmatchup(ctx, username, opponent):
+async def vsmatchup(ctx, username, opponent, first_date="1000 months", last_date="0 days"):
+    username = username.lower()
+    opponent = opponent.lower()
+    date_init = LiveDateInit(first_date, last_date)
+    first_date = date_init.first
+    last_date = date_init.last
+
     if not await num_processes_init(ctx):
         return None
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
@@ -247,7 +258,7 @@ async def vsmatchup(ctx, username, opponent):
     # First do username's games
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
-                                                username)
+                                                username, 10000000000, first_date, last_date)
 
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
@@ -257,9 +268,12 @@ async def vsmatchup(ctx, username, opponent):
     embed1 = await vs_matchup_embed(ctx, username, opponent, list_of_opponents)
 
     # Second do opponent's games
+    opp_first_date = list_of_opponents[opponent]["min_time"]
+    opp_last_date = list_of_opponents[opponent]["max_time"]
+
     searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
-                                                opponent, 10000000, searched_games.first_date, searched_games.last_date)
+                                                opponent, 10000000, opp_first_date, opp_last_date)
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
         await ctx.send(searched_games.error_message)
@@ -305,27 +319,40 @@ async def embed_init(username):
 async def vs_matchup_embed(ctx, username, opponent, list_of_opponents):
     embed = await embed_init(username)
 
-    has_opponent = False
-    for key in list_of_opponents:
-        if key is None:
-            continue
-        if key.lower() == opponent.lower():
-            winrate = list_of_opponents[key]["won"] / list_of_opponents[key]["games"] * 100
-            won_games = list_of_opponents[key]['won']
-            has_opponent = True
-            embed.add_field(name='**opponent:**', value=key, inline=True)
-            embed.add_field(name='**games won:**', value=f"{won_games}  ({winrate:.2f}%)", inline=True)
-            embed.add_field(name='**total games:**', value=list_of_opponents[key]["games"], inline=True)
-            embed.add_field(name='**apm:**', value=list_of_opponents[key]["apm"], inline=True)
-            embed.add_field(name='**spm:**', value=list_of_opponents[key]["spm"], inline=True)
-            embed.add_field(name='**pps:**', value=list_of_opponents[key]["pps"], inline=True)
-            embed.add_field(name='**apm (weighted):**', value=list_of_opponents[key]["wapm"], inline=True)
-            embed.add_field(name='**spm (weighted):**', value=list_of_opponents[key]["wspm"], inline=True)
-            embed.add_field(name='**pps (weighted):**', value=list_of_opponents[key]["wpps"], inline=True)
-
-    embed.set_footer(text='All stats here are for the player, not the opponent. To find the opponents stats, simply '
-                          'call this command again in reverse. Also, Jstris will delete replays over time, and they '
-                          'will not be counted here. Weighted means weighted by time, not game.')
+    # for key in list_of_opponents:
+    #     if key is None:
+    #         continue
+    #     if key.lower() == opponent.lower():
+    #         winrate = list_of_opponents[key]["won"] / list_of_opponents[key]["games"] * 100
+    #         won_games = list_of_opponents[key]['won']
+    #         has_opponent = True
+    #         embed.add_field(name='**opponent:**', value=key, inline=True)
+    #         embed.add_field(name='**games won:**', value=f"{won_games}  ({winrate:.2f}%)", inline=True)
+    #         embed.add_field(name='**total games:**', value=list_of_opponents[key]["games"], inline=True)
+    #         embed.add_field(name='**apm:**', value=list_of_opponents[key]["apm"], inline=True)
+    #         embed.add_field(name='**spm:**', value=list_of_opponents[key]["spm"], inline=True)
+    #         embed.add_field(name='**pps:**', value=list_of_opponents[key]["pps"], inline=True)
+    #         embed.add_field(name='**apm (weighted):**', value=list_of_opponents[key]["wapm"], inline=True)
+    #         embed.add_field(name='**spm (weighted):**', value=list_of_opponents[key]["wspm"], inline=True)
+    #         embed.add_field(name='**pps (weighted):**', value=list_of_opponents[key]["wpps"], inline=True)
+    if opponent in list_of_opponents:
+        winrate = list_of_opponents[opponent]["won"] / list_of_opponents[opponent]["games"] * 100
+        won_games = list_of_opponents[opponent]['won']
+        has_opponent = True
+        embed.add_field(name='**opponent:**', value=opponent, inline=True)
+        embed.add_field(name='**games won:**', value=f"{won_games}  ({winrate:.2f}%)", inline=True)
+        embed.add_field(name='**total games:**', value=list_of_opponents[opponent]["games"], inline=True)
+        embed.add_field(name='**apm:**', value=list_of_opponents[opponent]["apm"], inline=True)
+        embed.add_field(name='**spm:**', value=list_of_opponents[opponent]["spm"], inline=True)
+        embed.add_field(name='**pps:**', value=list_of_opponents[opponent]["pps"], inline=True)
+        embed.add_field(name='**apm (weighted):**', value=list_of_opponents[opponent]["wapm"], inline=True)
+        embed.add_field(name='**spm (weighted):**', value=list_of_opponents[opponent]["wspm"], inline=True)
+        embed.add_field(name='**pps (weighted):**', value=list_of_opponents[opponent]["wpps"], inline=True)
+        embed.set_footer(text='All stats here are for the player, not the opponent. To find the opponents stats, '
+                              'simply call this command again in reverse. Also, Jstris will delete replays over time, '
+                              'and they will not be counted here. Weighted means weighted by time, not game.')
+    else:
+        has_opponent = False
 
     if not has_opponent:
         await ctx.send(ctx.author.mention)

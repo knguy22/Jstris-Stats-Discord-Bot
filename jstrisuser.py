@@ -91,12 +91,11 @@ class UserLiveGames:
                     self.still_searching = False
                     break
                 else:
-                    print('1strike fail', self.prev_date, current_date, self.first_date, self.last_date)
+                    # print('1strike fail', self.prev_date, current_date, self.first_date, self.last_date)
                     self.prev_date_first_strike = False
-                    self.all_stats.pop(-1)
 
             if current_date < self.first_date:
-                print('0strike', self.prev_date, current_date, self.first_date, self.last_date)
+                # print('0strike', self.prev_date, current_date, self.first_date, self.last_date)
                 if self.prev_date > current_date and not self.prev_date_first_strike:
                     self.prev_date_first_strike = True
 
@@ -161,6 +160,20 @@ class UserLiveGames:
             self.error_message = f"{self.username}: No played games"
 
     def first_last_date(self):
+
+        # num_popped = 0
+        # for i, j in enumerate(self.all_stats):
+        #     if not self.first_date <= datetime.datetime.strptime(j['gtime'], "%Y-%m-%d %H:%M:%S") <= self.last_date:
+        #         self.all_stats.pop(i - num_popped)
+        #         # num_popped += 1
+
+        if datetime.datetime.strptime(self.all_stats[-1]['gtime'], "%Y-%m-%d %H:%M:%S") < self.first_date:
+            self.all_stats.pop(-1)
+
+        # for i in self.all_stats:
+        #     if i['vs'] == "Reminder" or i['vs'] == "SiO":
+        #         print(i)
+
         min_time = self.all_stats[-1]["gtime"]
         max_time = self.all_stats[1]["gtime"]
 
@@ -402,7 +415,7 @@ class UserIndivGames:
         r = self.my_session.get(url)
         self.page_request = r.text
         self.file_treater()
-        time.sleep(1)
+        time.sleep(1.5)
 
     def file_treater(self):
 

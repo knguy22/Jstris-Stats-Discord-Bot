@@ -271,7 +271,6 @@ async def vsmatchup(ctx, username, opponent, first_date="1000 months", last_date
         await ctx.send(ctx.author.mention)
         await ctx.send(searched_games.error_message)
         return None
-    # print(searched_games.all_stats)
     list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
     embed1 = await vs_matchup_embed(ctx, username, opponent, list_of_opponents)
 

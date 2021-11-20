@@ -2,6 +2,7 @@ import datetime
 
 # Jstris html data conversions
 
+
 def user_string(s):
     """
     Input:

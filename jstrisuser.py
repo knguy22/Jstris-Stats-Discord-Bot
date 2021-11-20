@@ -33,6 +33,9 @@ class UserLiveGames:
 
         self.first_date = datetime.datetime.strptime(self.first_date, "%Y-%m-%d %H:%M:%S")
         self.last_date = datetime.datetime.strptime(self.last_date, "%Y-%m-%d %H:%M:%S")
+        self.prev_date = datetime.datetime.strptime("9999-01-01 00:00:00", "%Y-%m-%d %H:%M:%S")
+        self.prev_date_first_strike = False
+        self.in_time_period = False
         self.all_stats = []
         self.page_request = [{}]
         self.offset = 0
@@ -69,33 +72,61 @@ class UserLiveGames:
         """
         for i, j in enumerate(self.page_request):
 
-            # Checking for first and last date
-            if self.page_request[i]['gtime'] is None:
+            # Dates can be None type for some reason; ignore these replays
+            if j['gtime'] is None or self.page_request[i-1]['gtime'] is None:
                 continue
 
             current_date = datetime.datetime.strptime(j['gtime'], "%Y-%m-%d %H:%M:%S")
-            if i < len(self.page_request) - 1:
-                if self.page_request[i + 1]['gtime'] is None:
-                    continue
-                next_date = datetime.datetime.strptime(self.page_request[i + 1]['gtime'], "%Y-%m-%d %H:%M:%S")
+            if i > 0:
+                self.prev_date = datetime.datetime.strptime(self.page_request[i-1]['gtime'], "%Y-%m-%d %H:%M:%S")
+
+            if current_date <= self.last_date:
+                self.in_time_period = True
             else:
-                next_date = datetime.datetime.strptime("0001-01-01 00:00:00", "%Y-%m-%d %H:%M:%S")
+                self.in_time_period = False
 
-            if current_date > self.last_date:
-                continue
-            elif next_date > self.last_date:
-                continue
-
-            if current_date < self.first_date:
-                if next_date < current_date:
+            if self.prev_date_first_strike:
+                if current_date < self.first_date and current_date < self.prev_date:
+                    print('1strike success', self.prev_date, current_date, self.first_date, self.last_date)
                     self.still_searching = False
                     break
+                else:
+                    print('1strike fail', self.prev_date, current_date, self.first_date, self.last_date)
+                    self.prev_date_first_strike = False
+                    self.all_stats.pop(-1)
+
+            if current_date < self.first_date:
+                print('0strike', self.prev_date, current_date, self.first_date, self.last_date)
+                if self.prev_date > current_date and not self.prev_date_first_strike:
+                    self.prev_date_first_strike = True
+
+            if not self.in_time_period:
+                continue
+
+            # if current_date > self.last_date:
+            #     self.in_time_period = False
+            #     continue
+            #
+            # if self.prev_date_first_strike:
+            #     print('first strike', self.prev_date, current_date, self.first_date, self.last_date)
+            #     if current_date < self.first_date:
+            #         self.still_searching = False
+            #         break
+            #     else:
+            #         self.prev_date_first_strike = False
+            #         self.all_stats.pop(-1)
+            #
+            # if current_date < self.first_date:
+            #     if self.prev_date > current_date and not self.prev_date_first_strike:
+            #         print('0 strike', self.prev_date, current_date)
+            #         self.prev_date_first_strike = True
 
             # Adding apm, spm, pps and then appending to all stats
 
             j['apm'] = j['attack'] / j['gametime'] * 60
             j['spm'] = j['sent'] / j['gametime'] * 60
             j['pps'] = j['pcs'] / j['gametime']
+
             self.all_stats.append(j)
 
             # Checking for offset limit

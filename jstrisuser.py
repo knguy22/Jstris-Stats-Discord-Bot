@@ -13,7 +13,7 @@ import datetime
 
 class UserLiveGames:
 
-    def __init__(self, username, num_games=10, first_date="0000-00-00 00:00:00", last_date="9999-00-00 00:00:00"):
+    def __init__(self, username, num_games=10, first_date="0001-01-01 00:00:00", last_date="9999-01-01 00:00:00"):
         """
 
         :param username: str
@@ -30,6 +30,8 @@ class UserLiveGames:
         self.first_date: str = first_date
         self.last_date: str = last_date
 
+        self.first_date = datetime.datetime.strptime(self.first_date, "%Y-%m-%d %H:%M:%S")
+        self.last_date = datetime.datetime.strptime(self.last_date, "%Y-%m-%d %H:%M:%S")
         self.all_stats = []
         self.page_request = [{}]
         self.offset = 0
@@ -65,6 +67,22 @@ class UserLiveGames:
         for i, j in enumerate(self.page_request):
 
             # Checking for first and last date
+            current_date = datetime.datetime.strptime(j['gtime'], "%Y-%m-%d %H:%M:%S")
+            if i < len(self.page_request) - 1:
+                next_date = datetime.datetime.strptime(self.page_request[i + 1]['gtime'], "%Y-%m-%d %H:%M:%S")
+            else:
+                next_date = datetime.datetime.strptime("0001-01-01 00:00:00", "%Y-%m-%d %H:%M:%S")
+
+
+            if current_date > self.last_date:
+                continue
+            elif next_date > self.last_date:
+                continue
+
+            if current_date < self.first_date:
+                if next_date < current_date:
+                    self.still_searching = False
+                    break
 
             # Adding apm, spm, pps and then appending to all stats
 
@@ -140,6 +158,7 @@ class UserIndivGames:
         self.mode: str = mode
         self.period: str = period
 
+        print(datetime.datetime.now)
         self.all_stats = []
         self.my_session = requests.session()
         self.page_request = ""
@@ -445,5 +464,5 @@ class UserIndivGames:
 
 
 if __name__ == "__main__":
-    h = UserLiveGames("truebulge")
+    h = UserLiveGames("truebulge", num_games=1000000000)
     print(h.all_stats)

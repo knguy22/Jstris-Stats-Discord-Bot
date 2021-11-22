@@ -5,6 +5,8 @@ import jstrisfunctions
 from jstrishtml import *
 import datetime
 
+import json
+
 
 # Returns all_stats containing entries of following dict:
 # id, gid, cid, gametime, sent, attack, rep, pcs, players, r1v1, pos, vs, gtime, apm, spm, pps
@@ -30,17 +32,17 @@ class UserLiveGames:
         """
         self.username: str = username
         self.num_games: int = num_games
-        self.first_date: str = first_date
-        self.last_date: str = last_date
+        self.first_date_str: str = first_date
+        self.last_date_str: str = last_date
 
-        self.first_date = datetime.datetime.strptime(self.first_date, "%Y-%m-%d %H:%M:%S")
-        self.last_date = datetime.datetime.strptime(self.last_date, "%Y-%m-%d %H:%M:%S")
+        self.first_date_datetime: datetime = datetime.datetime.strptime(self.first_date_str, "%Y-%m-%d %H:%M:%S")
+        self.last_date_datetime: datetime = datetime.datetime.strptime(self.last_date_str, "%Y-%m-%d %H:%M:%S")
 
         self.num_prev_dates = 5
         self.curr_date_and_prev_dates = list(range(self.num_prev_dates + 1))
         for i, j in enumerate(self.curr_date_and_prev_dates):
-            self.curr_date_and_prev_dates[i] = datetime.datetime.strptime("9999-01-01 00:00:00", "%Y-%m-%d %H:%M:%S") + datetime.\
-                timedelta(days=i)
+            self.curr_date_and_prev_dates[i] = datetime.datetime.strptime("9999-01-01 00:00:00", "%Y-%m-%d %H:%M:%S") \
+                                               + datetime.timedelta(days=i)
         self.prev_date_strike_num = 0
         self.potential_false_positive = 0
         self.in_time_period = False
@@ -91,24 +93,6 @@ class UserLiveGames:
             if not self.in_time_period:
                 continue
 
-            # if current_date > self.last_date:
-            #     self.in_time_period = False
-            #     continue
-            #
-            # if self.prev_date_first_strike:
-            #     print('first strike', self.curr_date_and_prev_dates, current_date, self.first_date, self.last_date)
-            #     if current_date < self.first_date:
-            #         self.still_searching = False
-            #         break
-            #     else:
-            #         self.prev_date_first_strike = False
-            #         self.all_stats.pop(-1)
-            #
-            # if current_date < self.first_date:
-            #     if self.curr_date_and_prev_dates > current_date and not self.prev_date_first_strike:
-            #         print('0 strike', self.curr_date_and_prev_dates, current_date)
-            #         self.prev_date_first_strike = True
-
             # Adding apm, spm, pps and then appending to all stats
 
             j['apm'] = j['attack'] / j['gametime'] * 60
@@ -128,17 +112,17 @@ class UserLiveGames:
         self.curr_date_and_prev_dates.insert(0, datetime.datetime.strptime(j['gtime'], "%Y-%m-%d %H:%M:%S"))
 
         # Check in time period; if so perhaps there is false positive
-        if self.curr_date_and_prev_dates[0] <= self.last_date:
+        if self.curr_date_and_prev_dates[0] <= self.last_date_datetime:
             self.in_time_period = True
             self.potential_false_positive += 1
         else:
             self.in_time_period = False
 
         if self.prev_date_strike_num > 0:
-            if self.curr_date_and_prev_dates[0] < self.first_date\
+            if self.curr_date_and_prev_dates[0] < self.first_date_datetime\
                     and sorted(self.curr_date_and_prev_dates) == self.curr_date_and_prev_dates \
                     and self.prev_date_strike_num == self.num_prev_dates:
-                print('strike success', self.curr_date_and_prev_dates, self.first_date, self.last_date)
+                print('strike success', self.curr_date_and_prev_dates)
                 for m in range(self.num_prev_dates):
                     self.all_stats.pop(-1)
                     if len(self.all_stats) == 0:
@@ -147,7 +131,6 @@ class UserLiveGames:
                 return True
 
             elif self.prev_date_strike_num == self.num_prev_dates:
-                # print('strike fail', self.curr_date_and_prev_dates, self.first_date, self.last_date, self.in_time_period)
                 self.prev_date_strike_num = 0
                 if not self.in_time_period:
                     for n in range(self.potential_false_positive):
@@ -155,10 +138,9 @@ class UserLiveGames:
                 self.potential_false_positive = 0
 
             else:
-                # print('checking strike', self.curr_date_and_prev_dates)
                 self.prev_date_strike_num += 1
 
-        if self.curr_date_and_prev_dates[0] < self.first_date:
+        if self.curr_date_and_prev_dates[0] < self.first_date_datetime:
             if self.curr_date_and_prev_dates[1] > self.curr_date_and_prev_dates[0] and not self.prev_date_strike_num:
                 self.prev_date_strike_num = 1
 
@@ -167,10 +149,10 @@ class UserLiveGames:
 
         Stores a url's data into self.page_request
         """
-        # print(url)
+        print(url)
         r = self.my_session.get(url)
         self.page_request = r.json()
-        time.sleep(1)
+        time.sleep(1.5)
         if len(self.page_request) < 50:
             self.still_searching = False
 
@@ -190,14 +172,26 @@ class UserLiveGames:
 
     def first_last_date(self):
 
-        if datetime.datetime.strptime(self.all_stats[-1]['gtime'], "%Y-%m-%d %H:%M:%S") < self.first_date:
+        # Not using the min and max functions because min will pick up faulty jstris dates; taking first and last
+        # index is much less likely to fail.
+
+        if datetime.datetime.strptime(self.all_stats[-1]['gtime'], "%Y-%m-%d %H:%M:%S") < self.first_date_datetime:
             self.all_stats.pop(-1)
 
-        min_time = self.all_stats[-1]["gtime"]
-        max_time = self.all_stats[1]["gtime"]
+        list_of_dates = []
 
-        self.first_date = str(min_time)
-        self.last_date = str(max_time)
+        for i in self.all_stats:
+            list_of_dates.append(datetime.datetime.strptime(i['gtime'], "%Y-%m-%d %H:%M:%S"))
+
+        # min_time = self.all_stats[-1]["gtime"]
+        # max_time = self.all_stats[1]["gtime"]
+        min_time = str(min(list_of_dates))
+        max_time = str(max(list_of_dates))
+
+        self.first_date_str = min_time
+        self.last_date_str = max_time
+        self.first_date_datetime = datetime.datetime.strptime(self.first_date_str, "%Y-%m-%d %H:%M:%S")
+        self.last_date_datetime = datetime.datetime.strptime(self.last_date_str, "%Y-%m-%d %H:%M:%S")
 
 # Returns all replay data of a username's specific gamemode
 # game: 1 = sprint, 3 = cheese, 4 = survival, 5 = ultra, 7 = 20TSD, 8 = PC Mode
@@ -543,45 +537,12 @@ class UserIndivGames:
 
 
 if __name__ == "__main__":
-    h = UserLiveGames("sio", num_games=200000)
+    h = UserLiveGames("truebulge", num_games=1000)
     print(h.username)
-    print(h.first_date, h.last_date)
+    print(h.first_date_str, h.last_date_str)
     print(len(h.all_stats))
     a = jstrisfunctions.opponents_matchups(h.all_stats)
     print(a)
-
-    h = UserLiveGames("reminder", num_games=200000)
-    print(h.username)
-    print(h.first_date, h.last_date)
-    print(len(h.all_stats))
-    a = jstrisfunctions.opponents_matchups(h.all_stats)
-    print(a)
-
-    h = UserLiveGames("zebrahugger", num_games=200000, first_date="2021-03-15 00:00:00", last_date="2021-09-30 00:00:00")
-    print(h.username)
-    print(h.first_date, h.last_date)
-    print(len(h.all_stats))
-    a = jstrisfunctions.opponents_matchups(h.all_stats)
-    print(a)
-
-    h = UserLiveGames("quickandsmart", num_games=200000, first_date="2021-03-15 00:00:00", last_date="2021-09-30 00:00:00")
-    print(h.username)
-    print(h.first_date, h.last_date)
-    print(len(h.all_stats))
-    a = jstrisfunctions.opponents_matchups(h.all_stats)
-    print(a)
-
-    h = UserLiveGames("cloak", num_games=200000, first_date="2021-07-25 06:07:01", last_date="2021-07-25 06:26:43")
-    print(h.username)
-    print(h.first_date, h.last_date)
-    print(len(h.all_stats))
-    a = jstrisfunctions.opponents_matchups(h.all_stats)
-    print(a)
-
-    h = UserLiveGames("vince_hd", num_games=200000, first_date="2021-07-25 06:07:01", last_date="2021-07-25 06:26:43")
-    print(h.username)
-    print(h.first_date, h.last_date)
-    print(len(h.all_stats))
-    a = jstrisfunctions.opponents_matchups(h.all_stats)
-    print(a)
-    # h = UserLiveGames("reminder", num_games=200000, first_date="2021-11-21 00:00:00", last_date="2021-11-21 00:00:00")
+    with open("asdf.json", "w") as f:
+        # json_object = json.dumps(a, indent=4)
+        json.dump(a, f)

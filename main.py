@@ -36,9 +36,6 @@ async def least(ctx, username, *args):
         return None
 
     my_ps = IndivParameterInit(args)
-    if not my_ps.valid_params:
-        await ctx.send(ctx.author.mention)
-        await ctx.send("Invalid parameter")
 
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
     searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
@@ -60,9 +57,6 @@ async def most(ctx, username: str, *args):
         return None
 
     my_ps = IndivParameterInit(args)
-    if not my_ps.valid_params:
-        await ctx.send(ctx.author.mention)
-        await ctx.send("Invalid parameter")
 
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
     searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
@@ -85,9 +79,6 @@ async def average(ctx, username: str, *args):
         return None
 
     my_ps = IndivParameterInit(args)
-    if not my_ps.valid_params:
-        await ctx.send(ctx.author.mention)
-        await ctx.send("Invalid parameter")
 
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
     searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),

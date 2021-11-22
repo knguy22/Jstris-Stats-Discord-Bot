@@ -68,7 +68,7 @@ class LiveDateInit:
         num_days = self.is_time_ago_to_days(string)
         if num_days is None:
             self.has_error = True
-            self.error_message = f"Error: Not valid date formatting ({string})"
+            self.error_message = f'Error: Not valid date formatting ("{string}")'
             return None
         my_date = now - datetime.timedelta(days=num_days)
         my_date = my_date.strftime("%Y-%m-%d %H:%M:%S.%f")[:-7]
@@ -114,14 +114,19 @@ class LiveDateInit:
         if first > last:
             self.first, self.last = self.last, self.first
 
+    def __repr__(self):
+        if self.has_error:
+            return f"LiveDateInit({self.error_message})"
+        return f"LiveDateInit(first: {self.first}, last: {self.last})"
+
 
 # Returns self.game, self.mode, self.period, self.param
 # Ex: self.game = 1, self.mode = 2, self.period = 3
 # self.param = finesse
+
 class IndivParameterInit:
 
     def __init__(self, my_tuple):
-        self.valid_params = True
         self.gamemode = ""
         self.game = ""
         self.period = ""
@@ -226,6 +231,10 @@ class IndivParameterInit:
                 self.param = "pcs"
             else:
                 self.param = "time"
+
+    def __repr__(self):
+        return f"IndivParameterInit(gamemode: {self.gamemode}, game: {self.game}, " \
+               f"mode: {self.mode}, period: {self.period}, param: {self.param})"
 
 
 def sub300(listofruns):
@@ -395,8 +404,10 @@ def opponents_matchups(list_of_games):
 
 
 if __name__ == "__main__":
-    first_date = '5 days'
+    first_date = 'asdfasgd'
     second_date = 'march 5, 2021'
     h = LiveDateInit(first_date, second_date)
-    print(h.first, h.last)
+    print(h)
     print(h.error_message)
+    g = IndivParameterInit("asdfasdgasdg")
+    print(g)

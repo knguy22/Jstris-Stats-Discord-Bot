@@ -47,7 +47,7 @@ async def least(ctx, username: str, *args):
     if searched_games.has_error:
         await ctx.send(searched_games.error_message)
     else:
-        a = jstrisfunctions.least_(searched_games.all_stats, my_ps.param)
+        a = jstrisfunctions.least_(searched_games.all_replays, my_ps.param)
         await replay_send(ctx, a)
 
 
@@ -69,7 +69,7 @@ async def most(ctx, username: str, *args):
         await ctx.send(ctx.author.mention)
         await ctx.send(searched_games.error_message)
     else:
-        a = jstrisfunctions.most_(searched_games.all_stats, my_ps.param)
+        a = jstrisfunctions.most_(searched_games.all_replays, my_ps.param)
         await replay_send(ctx, a)
 
 
@@ -90,7 +90,7 @@ async def average(ctx, username: str, *args):
         await ctx.send(ctx.author.mention)
         await ctx.send(searched_games.error_message)
     else:
-        my_average = jstrisfunctions.average_(searched_games.all_stats, my_ps.param)
+        my_average = jstrisfunctions.average_(searched_games.all_replays, my_ps.param)
         await ctx.send(ctx.author.mention)
         await ctx.send(f"Average {my_ps.param} for {username} is: {my_average}")
 
@@ -111,7 +111,7 @@ async def numgames(ctx, username: str, *args):
     if searched_games.has_error:
         await ctx.send(searched_games.error_message)
     else:
-        a = len(searched_games.all_stats)
+        a = len(searched_games.all_replays)
         await ctx.send(ctx.author.mention)
         await ctx.send(f"{str(a)} games")
 
@@ -135,7 +135,7 @@ async def sub300(ctx, username: str, period: str = "alltime"):
         await ctx.send(ctx.author.mention)
         await ctx.send(searched_games.error_message)
     else:
-        a = jstrisfunctions.sub300(searched_games.all_stats)
+        a = jstrisfunctions.sub300(searched_games.all_replays)
         await ctx.send(ctx.author.mention)
         await ctx.send(f"{username} has {a} sub 300s")
 
@@ -159,28 +159,28 @@ async def vs(ctx, username: str, offset: int = 10):
         return None
 
     # Calculates averages
-    apm_avg = str(jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'apm'))
-    spm_avg = str(jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'spm'))
-    pps_avg = str(jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'pps'))
-    weight_apm = str(round(jstrisfunctions.live_games_weighted_avg(searched_games.all_stats, offset, 'attack') * 60, 2))
-    weight_spm = str(round(jstrisfunctions.live_games_weighted_avg(searched_games.all_stats, offset, 'sent') * 60, 2))
-    weight_pps = str(round(jstrisfunctions.live_games_weighted_avg(searched_games.all_stats, offset, 'pcs'), 2))
-    time_avg = str(jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'gametime'))
-    players_avg = str(jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'players'))
-    pos_avg = str(jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'pos'))
-    won_games = jstrisfunctions.games_won(searched_games.all_stats, offset)
+    apm_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'apm')
+    spm_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'spm')
+    pps_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'pps')
+    weight_apm = round(jstrisfunctions.live_games_weighted_avg(searched_games.all_replays, offset, 'attack') * 60, 2)
+    weight_spm = round(jstrisfunctions.live_games_weighted_avg(searched_games.all_replays, offset, 'sent') * 60, 2)
+    weight_pps = round(jstrisfunctions.live_games_weighted_avg(searched_games.all_replays, offset, 'pcs'), 2)
+    time_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'gametime')
+    players_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'players')
+    pos_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'pos')
+    won_games = jstrisfunctions.games_won(searched_games.all_replays, offset)
 
     # Discord formatting
     embed = await embed_init(username)
-    embed.add_field(name="**apm:**", value=apm_avg, inline=True)
-    embed.add_field(name="**spm:**", value=spm_avg, inline=True)
-    embed.add_field(name="**pps:**", value=pps_avg, inline=True)
-    embed.add_field(name="**apm (weighted):**", value=weight_apm, inline=True)
-    embed.add_field(name="**spm (weighted):**", value=weight_spm, inline=True)
-    embed.add_field(name="**pps (weighted):**", value=weight_pps, inline=True)
-    embed.add_field(name="**time (seconds):**", value=time_avg, inline=True)
-    embed.add_field(name="**final position:**", value=pos_avg, inline=True)
-    embed.add_field(name="**players:**", value=players_avg, inline=True)
+    embed.add_field(name="**apm:**", value=str(apm_avg), inline=True)
+    embed.add_field(name="**spm:**", value=str(spm_avg), inline=True)
+    embed.add_field(name="**pps:**", value=str(pps_avg), inline=True)
+    embed.add_field(name="**apm (weighted):**", value=str(weight_apm), inline=True)
+    embed.add_field(name="**spm (weighted):**", value=str(weight_spm), inline=True)
+    embed.add_field(name="**pps (weighted):**", value=str(weight_pps), inline=True)
+    embed.add_field(name="**time (seconds):**", value=str(time_avg), inline=True)
+    embed.add_field(name="**final position:**", value=str(pos_avg), inline=True)
+    embed.add_field(name="**players:**", value=str(players_avg), inline=True)
     embed.add_field(name="**games won:**", value=f"{won_games}  ({won_games/offset*100:.2f}%)", inline=False)
     embed.add_field(name="**number of games:**", value=str(offset), inline=False)
     embed.set_footer(text='All of these values are averages. Weighted means weighted by time, not game.')
@@ -211,7 +211,7 @@ async def allmatchups(ctx, username: str, first_date: str = "1000 months", last_
         await ctx.send(ctx.author.mention)
         await ctx.send(searched_games.error_message)
         return None
-    list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
+    list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_replays)
 
     # Discord formatting stuff
 
@@ -262,7 +262,7 @@ async def vsmatchup(ctx, username: str, opponent: str, first_date: str = "1000 m
         await ctx.send(ctx.author.mention)
         await ctx.send(searched_games.error_message)
         return None
-    list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
+    list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_replays)
     embed1 = await vs_matchup_embed(ctx, username, opponent, list_of_opponents)
 
     # Opponent's games
@@ -273,12 +273,11 @@ async def vsmatchup(ctx, username: str, opponent: str, first_date: str = "1000 m
     searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
                                                 opponent, 10000000, opp_first_date, opp_last_date)
-    # print(searched_games.all_stats)
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
         await ctx.send(searched_games.error_message)
         return None
-    list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
+    list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_replays)
     embed2 = await vs_matchup_embed(ctx, opponent, username, list_of_opponents)
 
     # Finalizing
@@ -334,9 +333,10 @@ async def vs_matchup_embed(ctx, username: str, opponent: str, list_of_opponents:
         embed.add_field(name='**apm (weighted):**', value=list_of_opponents[opponent]["wapm"], inline=True)
         embed.add_field(name='**spm (weighted):**', value=list_of_opponents[opponent]["wspm"], inline=True)
         embed.add_field(name='**pps (weighted):**', value=list_of_opponents[opponent]["wpps"], inline=True)
-        embed.set_footer(text='All stats here are for the player, not the opponent. To find the opponents stats, '
-                              'simply call this command again in reverse. Also, Jstris will delete replays over time, '
-                              'and they will not be counted here. Weighted means weighted by time, not game.')
+        embed.add_field(name='**Earliest game:**', value=list_of_opponents[opponent]["min_time"], inline=True)
+        embed.add_field(name='**Latest game:**', value=list_of_opponents[opponent]["max_time"], inline=True)
+        embed.set_footer(text=' Weighted means weighted by time, not game. Note: Jstris will delete replays over time, '
+                              'and they will not be counted here.')
     else:
         has_opponent = False
 

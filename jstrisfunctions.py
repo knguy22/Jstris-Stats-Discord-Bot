@@ -7,7 +7,7 @@ import jstrishtml
 
 class LiveDateInit:
 
-    def __init__(self, first: str, last: str):
+    def __init__(self, first: str, last: str) -> None:
         """
 
         :param first: str; first date;
@@ -37,7 +37,7 @@ class LiveDateInit:
         if not self.has_error:
             self.first_vs_last()
 
-    def calendar_to_date(self, string: str):
+    def calendar_to_date(self, string: str) -> [None, str]:
 
         num_year = datetime.datetime.now().year
         num_day = '01'
@@ -63,7 +63,7 @@ class LiveDateInit:
             num_day = "0" + num_day
         return f"{num_year}-{num_month}-{num_day} 00:00:00"
 
-    def is_time_ago_to_date(self, string: str):
+    def is_time_ago_to_date(self, string: str) -> [None, str]:
         now = datetime.datetime.now()
         num_days = self.is_time_ago_to_days(string)
         if num_days is None:
@@ -75,7 +75,7 @@ class LiveDateInit:
         return my_date
 
     @staticmethod
-    def is_time_ago_to_days(string: str):
+    def is_time_ago_to_days(string: str) -> [None, int]:
         str_list = string.split(" ")
         num_days = 0
         num_months = 0
@@ -108,13 +108,13 @@ class LiveDateInit:
                 is_time_ago = True
         return is_time_ago
 
-    def first_vs_last(self):
+    def first_vs_last(self) -> None:
         first = datetime.datetime.strptime(self.first, "%Y-%m-%d %H:%M:%S")
         last = datetime.datetime.strptime(self.last, "%Y-%m-%d %H:%M:%S")
         if first > last:
             self.first, self.last = self.last, self.first
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.has_error:
             return f"LiveDateInit({self.error_message})"
         return f"LiveDateInit(first: {self.first}, last: {self.last})"
@@ -126,7 +126,7 @@ class LiveDateInit:
 
 class IndivParameterInit:
 
-    def __init__(self, my_tuple: tuple):
+    def __init__(self, my_tuple: tuple) -> None:
         self.gamemode = ""
         self.game = ""
         self.period = ""
@@ -149,7 +149,7 @@ class IndivParameterInit:
         self.default_settings()
         print(self.game, self.mode, self.param, self.period, self.gamemode)
 
-    def period_str_to_int(self, my_str: str):
+    def period_str_to_int(self, my_str: str) -> None:
         if my_str in ('day', 'Day', 'today', 'Today'):
             self.period = '1'
         elif my_str in ("week", 'Week'):
@@ -161,7 +161,7 @@ class IndivParameterInit:
         elif my_str in ('alltime', "Alltime"):
             self.period = '0'
 
-    def param_init(self, my_param: str, game: str):
+    def param_init(self, my_param: str, game: str) -> None:
         if game in ('ultra', 'Ultra') and my_param in ("ppb", 'PPB', 'Ppb'):
             self.param = 'ppb'
         if game in ('ultra', 'Ultra') and my_param in ("score", 'Score'):
@@ -179,7 +179,7 @@ class IndivParameterInit:
         if my_param in ('time', 'Time'):
             self.param = 'time'
 
-    def gamemode_init(self, my_str: str):
+    def gamemode_init(self, my_str: str) -> None:
         a = False
         if my_str == "sprint":
             a = {"game": '1', "mode": "1", "gamemode": 'sprint'}
@@ -212,7 +212,7 @@ class IndivParameterInit:
             self.mode = a["mode"]
             self.gamemode = a["gamemode"]
 
-    def default_settings(self):
+    def default_settings(self) -> None:
         if self.gamemode == "":
             self.game = '1'
             self.mode = '1'
@@ -232,12 +232,12 @@ class IndivParameterInit:
             else:
                 self.param = "time"
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"IndivParameterInit(gamemode: {self.gamemode}, game: {self.game}, " \
                f"mode: {self.mode}, period: {self.period}, param: {self.param})"
 
 
-def sub300(listofruns: list):
+def sub300(listofruns: list) -> int:
     c = 0
     for i in listofruns:
         if i["blocks"] < 300:
@@ -281,7 +281,7 @@ def most_(list_of_runs: list, my_param: str) -> dict:
     return final_run
 
 
-def average_(list_of_runs: list, my_param: str) -> float:
+def average_(list_of_runs: list, my_param: str) -> [float, str]:
 
     if my_param == "time":
         my_param = 'seconds'
@@ -359,11 +359,11 @@ def opponents_matchups(list_of_games: list) -> dict:
 
     all_opponents = {}
 
+    # Summing stats for each replay for each opponent
+
     for game in list_of_games:
         # No FFA games
-        if game['players'] == 2:
-            if game['vs'] is None:
-                continue
+        if game['players'] == 2 and game['vs'] is not None:
             player_name = game['vs'].lower()
 
             # Initialize new opponent name
@@ -371,7 +371,7 @@ def opponents_matchups(list_of_games: list) -> dict:
                 all_opponents[player_name] = {"games": 1, "won": 0, "apm": 0, "spm": 0, "pps": 0,
                                               'wapm': 0, 'wspm': 0, 'wpps': 0, 'time_sum': 0,
                                               'min_time': "",
-                                              'max_time': game['gtime']}
+                                              'max_time': ""}
             else:
                 all_opponents[player_name]['games'] += 1
 
@@ -385,7 +385,36 @@ def opponents_matchups(list_of_games: list) -> dict:
             all_opponents[player_name]['wspm'] += game['sent']
             all_opponents[player_name]['wpps'] += game['pcs']
             all_opponents[player_name]['time_sum'] += game['gametime']
-            all_opponents[player_name]['min_time'] = game['gtime']
+
+    # Finding min and max time for each opponent
+
+    for key in all_opponents:
+
+        list_of_dates = []
+        for game in list_of_games:
+            if game['vs'] is None or game['players'] != 2:
+                continue
+            if game['vs'].lower() == key:
+                list_of_dates.append(datetime.datetime.strptime(game['gtime'], "%Y-%m-%d %H:%M:%S"))
+
+        min_time = list_of_dates[-1]
+        max_time = list_of_dates[0]
+
+        if len(list_of_dates) > 3:
+            for m, n in enumerate(list_of_dates):
+                if list_of_dates[-m - 2] > list_of_dates[-m - 1] > min_time:
+                    break
+                min_time = list_of_dates[-m - 1]
+
+            for m, n in enumerate(list_of_dates):
+                if list_of_dates[m + 2] < n < max_time:
+                    break
+                max_time = n
+
+        all_opponents[key]['min_time'] = str(min_time)
+        all_opponents[key]['max_time'] = str(max_time)
+
+    # Calculate averages for relevant stats
 
     for key in all_opponents:
         all_opponents[key]['apm'] = round(all_opponents[key]['apm'] / all_opponents[key]['games'], 2)

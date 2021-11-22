@@ -5,10 +5,8 @@ import jstrisfunctions
 from jstrishtml import *
 import datetime
 
-import json
 
-
-# Returns all_stats containing entries of following dict:
+# Returns all_replays containing entries of following dict:
 # id, gid, cid, gametime, sent, attack, rep, pcs, players, r1v1, pos, vs, gtime, apm, spm, pps
 # Ex: {"id":201211863,"gid":"MX2G04","cid":88899054,"gametime":71.31,"sent":81,
 # "attack":94,"rep":"3","pcs":133,"players":4,"r1v1":0,"pos":1,"vs":"Torp","gtime":"2021-11-08 07:56:19"}
@@ -26,10 +24,11 @@ class UserLiveGames:
         :param first_date: str
         :param last_date: str
 
-        :return all_stats: (list)
+        :return all_replays: (list)
                 parameters from jstris api + (apm, spm, pps)
 
         """
+
         self.username: str = username
         self.num_games: int = num_games
         self.first_date_str: str = first_date
@@ -38,8 +37,8 @@ class UserLiveGames:
         self.first_date_datetime: datetime = datetime.datetime.strptime(self.first_date_str, "%Y-%m-%d %H:%M:%S")
         self.last_date_datetime: datetime = datetime.datetime.strptime(self.last_date_str, "%Y-%m-%d %H:%M:%S")
 
-        self.num_prev_dates = 5
-        self.curr_date_and_prev_dates = list(range(self.num_prev_dates + 1))
+        self.num_checking_prev_dates = 5
+        self.curr_date_and_prev_dates = list(range(self.num_checking_prev_dates + 1))
         for i, j in enumerate(self.curr_date_and_prev_dates):
             self.curr_date_and_prev_dates[i] = datetime.datetime.strptime("9999-01-01 00:00:00", "%Y-%m-%d %H:%M:%S") \
                                                + datetime.timedelta(days=i)
@@ -47,7 +46,7 @@ class UserLiveGames:
         self.potential_false_positive = 0
         self.in_time_period = False
 
-        self.all_stats = []
+        self.all_replays = []
         self.page_request = [{}]
         self.offset = 0
         self.still_searching = True
@@ -55,14 +54,14 @@ class UserLiveGames:
         self.error_message = ""
         self.my_session = requests.session()
 
-        self.check_username()
+        self.check_username_exists()
         if not self.has_error:
             self.username_games()
             self.check_has_games()
             if not self.has_error:
-                self.first_last_date()
+                self.get_first_last_date()
 
-    def username_games(self):
+    def username_games(self) -> None:
         """
 
         iterates through jstris api games until all games are appended to dictionary
@@ -70,11 +69,11 @@ class UserLiveGames:
 
         while self.still_searching is True:
             url = f"https://jstris.jezevec10.com/api/u/{self.username}/live/games?offset={self.offset}"
-            self.username_leaderboard(url)
-            self.append_stats()
+            self.request_50_live_games(url)
+            self.append_replays()
             self.offset += 50
 
-    def append_stats(self):
+    def append_replays(self) -> None:
 
         """
 
@@ -83,11 +82,16 @@ class UserLiveGames:
         """
         for i, j in enumerate(self.page_request):
 
+            # Checking for offset limit
+            if self.num_games <= len(self.all_replays):
+                self.still_searching = False
+                break
+
             # Dates can be None type for some reason; ignore these replays
             if j['gtime'] is None:
                 continue
 
-            if self.first_last_date_check(j):
+            if self.check_if_in_time_period(j):
                 break
 
             if not self.in_time_period:
@@ -99,14 +103,9 @@ class UserLiveGames:
             j['spm'] = j['sent'] / j['gametime'] * 60
             j['pps'] = j['pcs'] / j['gametime']
 
-            self.all_stats.append(j)
+            self.all_replays.append(j)
 
-            # Checking for offset limit
-            if self.num_games <= len(self.all_stats):
-                self.still_searching = False
-                break
-
-    def first_last_date_check(self, j: dict):
+    def check_if_in_time_period(self, j: dict) -> bool:
         # Update current_date and all previous dates
         self.curr_date_and_prev_dates.pop(-1)
         self.curr_date_and_prev_dates.insert(0, datetime.datetime.strptime(j['gtime'], "%Y-%m-%d %H:%M:%S"))
@@ -121,20 +120,20 @@ class UserLiveGames:
         if self.prev_date_strike_num > 0:
             if self.curr_date_and_prev_dates[0] < self.first_date_datetime\
                     and sorted(self.curr_date_and_prev_dates) == self.curr_date_and_prev_dates \
-                    and self.prev_date_strike_num == self.num_prev_dates:
+                    and self.prev_date_strike_num == self.num_checking_prev_dates:
                 print('strike success', self.curr_date_and_prev_dates)
-                for m in range(self.num_prev_dates):
-                    self.all_stats.pop(-1)
-                    if len(self.all_stats) == 0:
+                for m in range(self.num_checking_prev_dates):
+                    self.all_replays.pop(-1)
+                    if len(self.all_replays) == 0:
                         break
                 self.still_searching = False
                 return True
 
-            elif self.prev_date_strike_num == self.num_prev_dates:
+            elif self.prev_date_strike_num == self.num_checking_prev_dates:
                 self.prev_date_strike_num = 0
                 if not self.in_time_period:
                     for n in range(self.potential_false_positive):
-                        self.all_stats.pop(-1)
+                        self.all_replays.pop(-1)
                 self.potential_false_positive = 0
 
             else:
@@ -144,7 +143,7 @@ class UserLiveGames:
             if self.curr_date_and_prev_dates[1] > self.curr_date_and_prev_dates[0] and not self.prev_date_strike_num:
                 self.prev_date_strike_num = 1
 
-    def username_leaderboard(self, url: str):
+    def request_50_live_games(self, url: str) -> None:
         """
 
         Stores a url's data into self.page_request
@@ -156,7 +155,7 @@ class UserLiveGames:
         if len(self.page_request) < 50:
             self.still_searching = False
 
-    def check_username(self):
+    def check_username_exists(self) -> None:
         my_url = f"https://jstris.jezevec10.com/api/u/{self.username}/live/games?offset=0"
         r = self.my_session.get(my_url)
         self.page_request = r.json()
@@ -165,31 +164,39 @@ class UserLiveGames:
             self.has_error = True
             self.error_message = f"{self.username}: Not valid username"
 
-    def check_has_games(self):
-        if len(self.all_stats) == 0:
+    def check_has_games(self) -> None:
+
+        if len(self.all_replays) == 0:
             self.has_error = True
             self.error_message = f"{self.username}: No played games"
 
-    def first_last_date(self):
+    def get_first_last_date(self) -> None:
 
         # Not using the min and max functions because min will pick up faulty jstris dates; taking first and last
-        # index is much less likely to fail.
+        # index is much less likely to fail, but compare to nearby indices to lower probability of false date
+        # even further
 
-        if datetime.datetime.strptime(self.all_stats[-1]['gtime'], "%Y-%m-%d %H:%M:%S") < self.first_date_datetime:
-            self.all_stats.pop(-1)
+        if datetime.datetime.strptime(self.all_replays[-1]['gtime'], "%Y-%m-%d %H:%M:%S") < self.first_date_datetime:
+            self.all_replays.pop(-1)
 
-        list_of_dates = []
+        list_of_dates = [datetime.datetime.strptime(i['gtime'], "%Y-%m-%d %H:%M:%S") for i in self.all_replays]
 
-        for i in self.all_stats:
-            list_of_dates.append(datetime.datetime.strptime(i['gtime'], "%Y-%m-%d %H:%M:%S"))
+        min_time = list_of_dates[-1]
+        max_time = list_of_dates[0]
 
-        # min_time = self.all_stats[-1]["gtime"]
-        # max_time = self.all_stats[1]["gtime"]
-        min_time = str(min(list_of_dates))
-        max_time = str(max(list_of_dates))
+        if len(list_of_dates) > 3:
+            for i, j in enumerate(list_of_dates):
+                if list_of_dates[-i-2] > list_of_dates[-i-1] > min_time:
+                    break
+                min_time = list_of_dates[-i-1]
 
-        self.first_date_str = min_time
-        self.last_date_str = max_time
+            for i, j in enumerate(list_of_dates):
+                if list_of_dates[i+2] < j < max_time:
+                    break
+                max_time = j
+
+        self.first_date_str = str(min_time)
+        self.last_date_str = str(max_time)
         self.first_date_datetime = datetime.datetime.strptime(self.first_date_str, "%Y-%m-%d %H:%M:%S")
         self.last_date_datetime = datetime.datetime.strptime(self.last_date_str, "%Y-%m-%d %H:%M:%S")
 
@@ -206,7 +213,7 @@ class UserLiveGames:
 
 class UserIndivGames:
 
-    def __init__(self, username: str, game: str, mode: str = '1', period: str = '0'):
+    def __init__(self, username: str, game: str, mode: str = '1', period: str = '0') -> None:
 
         """
 
@@ -229,7 +236,7 @@ class UserIndivGames:
         self.mode: str = mode
         self.period: str = period
 
-        self.all_stats = []
+        self.all_replays = []
         self.my_session = requests.session()
         self.page_request = ""
         self.current_last_replay = ""
@@ -237,15 +244,15 @@ class UserIndivGames:
         self.error_message = ""
         self.data_criteria = {}
 
-        self.check_username()
+        self.check_username_exists()
 
         if self.has_error is False:
             self.data_criteria_init()
             self.username_all_replay_stats()
-            self.duplicate_deleter()
+            self.duplicate_replay_deleter()
             self.check_has_games()
 
-    def username_all_replay_stats(self):
+    def username_all_replay_stats(self) -> None:
         """
         :return:
         """
@@ -304,7 +311,7 @@ class UserIndivGames:
             else:
                 url = f"https://jstris.jezevec10.com/{gamemode}?display=5&user={self.username}&time={self.period}"
 
-            self.username_leaderboard(url)
+            self.request_next_200_games(url)
 
             # adds current page replays to list of all other replays so far
             self.page_200_replays_stats()
@@ -320,7 +327,7 @@ class UserIndivGames:
             # sets up next url
             self.current_last_replay = str(self.last_time_in_page())
 
-    def page_200_replays_stats(self):
+    def page_200_replays_stats(self) -> None:
 
         # returns integers where there can be integers (Ex: blocks) and returns strings for others( Ex: date)
 
@@ -378,21 +385,21 @@ class UserIndivGames:
                         current_dict[i] = old_dict[i]
                     else:
                         current_dict["date (CET)"] = old_dict[i]
-                self.all_stats.append(current_dict)
+                self.all_replays.append(current_dict)
 
-    def check_has_games(self):
-        if len(self.all_stats) == 0:
+    def check_has_games(self) -> None:
+        if len(self.all_replays) == 0:
             self.has_error = True
             self.error_message = f"{self.username}: No played games"
 
-    def check_username(self):
+    def check_username_exists(self) -> None:
         my_url = f"https://jstris.jezevec10.com/u/{self.username}"
-        self.username_leaderboard(url=my_url)
+        self.request_next_200_games(url=my_url)
         if "<p>Requested link is invalid.</p>" in self.page_request:
             self.has_error = True
             self.error_message = f"{self.username}: Not valid username"
 
-    def data_criteria_init(self):
+    def data_criteria_init(self) -> None:
 
         """
 
@@ -417,7 +424,7 @@ class UserIndivGames:
                                   "blocks": "int", "pps": "float", "finesse": "int",
                                   "date": "string", "replay": "replaystring"}
 
-    def username_leaderboard(self, url: str):
+    def request_next_200_games(self, url: str) -> None:
         """
 
         Stores a url's data into self.page_request
@@ -426,10 +433,10 @@ class UserIndivGames:
         print(url)
         r = self.my_session.get(url)
         self.page_request = r.text
-        self.file_treater()
+        self.edit_html_request()
         time.sleep(1.5)
 
-    def file_treater(self):
+    def edit_html_request(self) -> None:
 
         """
         Handles any page requests fuckery like empty lines and spaces before each line
@@ -447,7 +454,7 @@ class UserIndivGames:
                 self.page_request[c] = self.page_request[c][1:]
             c += 1
 
-    def check_200_replays(self):
+    def check_200_replays(self) -> bool:
 
         """
 
@@ -492,7 +499,7 @@ class UserIndivGames:
 
         return False
 
-    def last_time_in_page(self):
+    def last_time_in_page(self) -> [int, float, str]:
 
         """
         :return last time in seconds or score in points of the page
@@ -519,30 +526,42 @@ class UserIndivGames:
             elif self.game == "5":
                 return td_int(self.page_request[lasttimeindex])
 
-    def duplicate_deleter(self):
+    def duplicate_replay_deleter(self) -> None:
         """
 
-        :return: all_stats with duplicate replays deleted
+        :return: all_replays with duplicate replays deleted
         """
 
-        if len(self.all_stats) == 1:
+        if len(self.all_replays) == 1:
             return None
 
         c = 0
-        while c < len(self.all_stats):
-            if self.all_stats[c] == self.all_stats[c - 1]:
-                self.all_stats.pop(c)
+        while c < len(self.all_replays):
+            if self.all_replays[c] == self.all_replays[c - 1]:
+                self.all_replays.pop(c)
                 c -= 1
             c += 1
 
 
 if __name__ == "__main__":
-    h = UserLiveGames("truebulge", num_games=1000)
+    h = UserLiveGames("cloak", num_games=0)
     print(h.username)
     print(h.first_date_str, h.last_date_str)
-    print(len(h.all_stats))
-    a = jstrisfunctions.opponents_matchups(h.all_stats)
-    print(a)
-    with open("asdf.json", "w") as f:
-        # json_object = json.dumps(a, indent=4)
-        json.dump(a, f)
+    print(len(h.all_replays))
+    print(h.all_replays)
+    a = jstrisfunctions.opponents_matchups(h.all_replays)
+    # print(a["vince_hd"])
+
+    # h = UserLiveGames("vince_hd", num_games=200000, first_date=h.first_date_str, last_date=h.last_date_str)
+    # print(h.username)
+    # print(h.first_date_str, h.last_date_str)
+    # print(len(h.all_replays))
+    # b = jstrisfunctions.opponents_matchups(h.all_replays)
+    # print(b['cloak'])
+
+    # h = UserLiveGames("vince_hd", num_games=200000, first_date=a["vince_hd"]['min_time'], last_date=a['vince_hd']['max_time'])
+    # print(h.username)
+    # print(h.first_date_str, h.last_date_str)
+    # print(len(h.all_replays))
+    # a = jstrisfunctions.opponents_matchups(h.all_replays)
+    # print(a)

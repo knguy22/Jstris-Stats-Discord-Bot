@@ -1,11 +1,26 @@
 import ijson
 import json
+
+import jstrisfunctions
 import jstrisuser
 import os
 from decimal import Decimal
 
 
-def append_file(username: str):
+def cache_init(username: str, param_class) -> list:
+    if type(param_class) == jstrisfunctions.IndivParameterInit:
+        pass
+    elif type(param_class) == jstrisfunctions.LiveDateInit:
+        pass
+
+    return []
+
+
+def cache_finish():
+    pass
+
+
+def append_file(username: str) -> None:
 
     new_username = new_stats(username)
 
@@ -19,17 +34,17 @@ def append_file(username: str):
         except ijson.common.IncompleteJSONError:
             print('Empty stats.json file')
 
-    with open("new_stats.json", "a") as g:
+    with open("new_all_replays.json", "a") as g:
         json.dump(new_username, g)
         g.write(']')
 
-    os.remove('stats.json')
-    os.rename("new_stats.json", 'stats.json')
+    os.remove('all_replays.json')
+    os.rename("new_all_replays.json", 'all_replays.json')
 
 
 def new_stats(username: str) -> dict:
     new_username_stats = download_user(username)
-    new_gamemode = {"date": new_username_stats.last_date_str, "list": new_username_stats.all_stats}
+    new_gamemode = {"date": new_username_stats.last_date_str, "list": new_username_stats.all_replays}
     new_gamemodes = {"vs": new_gamemode}
     new_username = {username: new_gamemodes}
     return new_username
@@ -38,7 +53,7 @@ def new_stats(username: str) -> dict:
 def download_user(username: str) -> jstrisuser.UserLiveGames:
     all_stats = jstrisuser.UserLiveGames(username=username)
     reduced_all_stats = []
-    for i in all_stats.all_stats:
+    for i in all_stats.all_replays:
         # i.pop('id')
         i.pop('gid')
         i.pop('cid')
@@ -49,7 +64,7 @@ def download_user(username: str) -> jstrisuser.UserLiveGames:
         i.pop('pps')
         reduced_all_stats.append(i)
 
-    all_stats.all_stats = reduced_all_stats
+    all_stats.all_replays = reduced_all_stats
     return all_stats
 
 

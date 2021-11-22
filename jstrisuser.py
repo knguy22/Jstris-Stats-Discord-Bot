@@ -17,8 +17,8 @@ import json
 
 class UserLiveGames:
 
-    def __init__(self, username, num_games=10000000000,
-                 first_date="0001-01-01 00:00:00", last_date="9999-01-01 00:00:00"):
+    def __init__(self, username: str, num_games=10000000000,
+                 first_date: str = "0001-01-01 00:00:00", last_date: str = "9999-01-01 00:00:00"):
         """
 
         :param username: str
@@ -106,7 +106,7 @@ class UserLiveGames:
                 self.still_searching = False
                 break
 
-    def first_last_date_check(self, j):
+    def first_last_date_check(self, j: dict):
         # Update current_date and all previous dates
         self.curr_date_and_prev_dates.pop(-1)
         self.curr_date_and_prev_dates.insert(0, datetime.datetime.strptime(j['gtime'], "%Y-%m-%d %H:%M:%S"))
@@ -144,7 +144,7 @@ class UserLiveGames:
             if self.curr_date_and_prev_dates[1] > self.curr_date_and_prev_dates[0] and not self.prev_date_strike_num:
                 self.prev_date_strike_num = 1
 
-    def username_leaderboard(self, url):
+    def username_leaderboard(self, url: str):
         """
 
         Stores a url's data into self.page_request
@@ -206,7 +206,7 @@ class UserLiveGames:
 
 class UserIndivGames:
 
-    def __init__(self, username, game, mode='1', period='0'):
+    def __init__(self, username: str, game: str, mode: str = '1', period: str = '0'):
 
         """
 
@@ -417,7 +417,7 @@ class UserIndivGames:
                                   "blocks": "int", "pps": "float", "finesse": "int",
                                   "date": "string", "replay": "replaystring"}
 
-    def username_leaderboard(self, url):
+    def username_leaderboard(self, url: str):
         """
 
         Stores a url's data into self.page_request

@@ -3,7 +3,7 @@ import datetime
 # Jstris html data conversions
 
 
-def user_string(s):
+def user_string(s: str) -> str:
     """
     Input:
         string: {}</a> where {} is username
@@ -18,7 +18,7 @@ def user_string(s):
     return usernamestring
 
 
-def time_string(s):
+def time_string(s: str) -> str:
 
     """
     Input:
@@ -88,7 +88,7 @@ def time_string(s):
     return f"{minutes}:{seconds}.{milliseconds}"
 
 
-def date_string(s):
+def date_string(s: str) -> str:
 
     """
        Input:
@@ -107,7 +107,7 @@ def date_string(s):
     return s
 
 
-def replay_string(s):
+def replay_string(s: str) -> str:
 
     """
        Input:
@@ -127,7 +127,7 @@ def replay_string(s):
     return s + " "
 
 
-def td_int(s):
+def td_int(s: str) -> int:
     # example
     # <td><strong>174,325</strong></td>
     """
@@ -144,7 +144,7 @@ def td_int(s):
     return int(s)
 
 
-def my_int(s):
+def my_int(s: str) -> int:
     """
 
     :param s: string
@@ -158,7 +158,7 @@ def my_int(s):
     return s
 
 
-def my_float(s):
+def my_float(s: str) -> float:
     # example
     # <td>379.15</td>
     """
@@ -174,7 +174,7 @@ def my_float(s):
     return round(s, 2)
 
 
-def clock_to_seconds(s):
+def clock_to_seconds(s: str) -> float:
     """
     Input:
         string: {a}:{b}.{c} where a = minutes, b = seconds, c = milliseconds rounded to 3 digits
@@ -193,5 +193,5 @@ def clock_to_seconds(s):
     return round(60 * minutes + seconds + milliseconds, 3)
 
 
-def seconds_to_clock(s):
+def seconds_to_clock(s: float) -> str:
     return str(datetime.timedelta(seconds=s))[:-3]

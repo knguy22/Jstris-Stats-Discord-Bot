@@ -1,5 +1,5 @@
-import jstrisuser
 import datetime
+import jstrishtml
 
 
 # Returns self.first and self.last as dates in the form of:
@@ -7,7 +7,7 @@ import datetime
 
 class LiveDateInit:
 
-    def __init__(self, first, last):
+    def __init__(self, first: str, last: str):
         """
 
         :param first: str; first date;
@@ -37,7 +37,7 @@ class LiveDateInit:
         if not self.has_error:
             self.first_vs_last()
 
-    def calendar_to_date(self, string):
+    def calendar_to_date(self, string: str):
 
         num_year = datetime.datetime.now().year
         num_day = '01'
@@ -63,7 +63,7 @@ class LiveDateInit:
             num_day = "0" + num_day
         return f"{num_year}-{num_month}-{num_day} 00:00:00"
 
-    def is_time_ago_to_date(self, string):
+    def is_time_ago_to_date(self, string: str):
         now = datetime.datetime.now()
         num_days = self.is_time_ago_to_days(string)
         if num_days is None:
@@ -75,7 +75,7 @@ class LiveDateInit:
         return my_date
 
     @staticmethod
-    def is_time_ago_to_days(string):
+    def is_time_ago_to_days(string: str):
         str_list = string.split(" ")
         num_days = 0
         num_months = 0
@@ -98,7 +98,7 @@ class LiveDateInit:
         return num_months + num_days
 
     @staticmethod
-    def check_if_calendar(string):
+    def check_if_calendar(string: str) -> bool:
         months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october',
                   'november', 'december']
         string_list = string.split(" ")
@@ -126,7 +126,7 @@ class LiveDateInit:
 
 class IndivParameterInit:
 
-    def __init__(self, my_tuple):
+    def __init__(self, my_tuple: tuple):
         self.gamemode = ""
         self.game = ""
         self.period = ""
@@ -149,7 +149,7 @@ class IndivParameterInit:
         self.default_settings()
         print(self.game, self.mode, self.param, self.period, self.gamemode)
 
-    def period_str_to_int(self, my_str):
+    def period_str_to_int(self, my_str: str):
         if my_str in ('day', 'Day', 'today', 'Today'):
             self.period = '1'
         elif my_str in ("week", 'Week'):
@@ -161,7 +161,7 @@ class IndivParameterInit:
         elif my_str in ('alltime', "Alltime"):
             self.period = '0'
 
-    def param_init(self, my_param, game):
+    def param_init(self, my_param: str, game: str):
         if game in ('ultra', 'Ultra') and my_param in ("ppb", 'PPB', 'Ppb'):
             self.param = 'ppb'
         if game in ('ultra', 'Ultra') and my_param in ("score", 'Score'):
@@ -179,7 +179,7 @@ class IndivParameterInit:
         if my_param in ('time', 'Time'):
             self.param = 'time'
 
-    def gamemode_init(self, my_str):
+    def gamemode_init(self, my_str: str):
         a = False
         if my_str == "sprint":
             a = {"game": '1', "mode": "1", "gamemode": 'sprint'}
@@ -237,7 +237,7 @@ class IndivParameterInit:
                f"mode: {self.mode}, period: {self.period}, param: {self.param})"
 
 
-def sub300(listofruns):
+def sub300(listofruns: list):
     c = 0
     for i in listofruns:
         if i["blocks"] < 300:
@@ -245,17 +245,15 @@ def sub300(listofruns):
     return c
 
 
-def best_run(list_of_runs):
+def best_run(list_of_runs: list) -> dict:
     return list_of_runs[0]
 
 
-def least_(list_of_runs, my_param):
-    if len(list_of_runs) == 0:
-        return None
+def least_(list_of_runs: list, my_param: str) -> dict:
 
     if my_param == "time":
         my_param = 'seconds'
-        list_of_seconds = list(map(lambda x: jstrisuser.clock_to_seconds(x['time']), list_of_runs))
+        list_of_seconds = list(map(lambda x: jstrishtml.clock_to_seconds(x['time']), list_of_runs))
         for c, my_second in enumerate(list_of_seconds):
             list_of_runs[c]['seconds'] = my_second
 
@@ -267,13 +265,11 @@ def least_(list_of_runs, my_param):
     return final_run
 
 
-def most_(list_of_runs, my_param):
-    if len(list_of_runs) == 0:
-        return None
+def most_(list_of_runs: list, my_param: str) -> dict:
 
     if my_param == "time":
         my_param = 'seconds'
-        list_of_seconds = list(map(lambda x: jstrisuser.clock_to_seconds(x['time']), list_of_runs))
+        list_of_seconds = list(map(lambda x: jstrishtml.clock_to_seconds(x['time']), list_of_runs))
         for c, my_second in enumerate(list_of_seconds):
             list_of_runs[c]['seconds'] = my_second
 
@@ -285,11 +281,11 @@ def most_(list_of_runs, my_param):
     return final_run
 
 
-def average_(list_of_runs, my_param):
+def average_(list_of_runs: list, my_param: str) -> float:
 
     if my_param == "time":
         my_param = 'seconds'
-        list_of_seconds = list(map(lambda x: jstrisuser.clock_to_seconds(x['time']), list_of_runs))
+        list_of_seconds = list(map(lambda x: jstrishtml.clock_to_seconds(x['time']), list_of_runs))
         for c, my_second in enumerate(list_of_seconds):
             list_of_runs[c]['seconds'] = my_second
 
@@ -298,11 +294,11 @@ def average_(list_of_runs, my_param):
         stat_average += i[my_param]
 
     if my_param == "seconds":
-        return jstrisuser.seconds_to_clock(round(stat_average/len(list_of_runs), 2))
+        return jstrishtml.seconds_to_clock(round(stat_average/len(list_of_runs), 2))
     return round(stat_average/len(list_of_runs), 2)
 
 
-def pc_finish_sprint(list_of_runs, mode):
+def pc_finish_sprint(list_of_runs: list, mode: str) -> int:
     lines = 0
     if mode == "2":
         lines = 20
@@ -318,11 +314,11 @@ def pc_finish_sprint(list_of_runs, mode):
             return i
 
 
-def num_games(list_of_runs):
+def num_games(list_of_runs: list) -> int:
     return len(list_of_runs)
 
 
-def live_games_avg(list_of_games, offset, param):
+def live_games_avg(list_of_games: list, offset: int, param: str) -> float:
     c = 0
     summation = 0
     while c < offset:
@@ -331,7 +327,7 @@ def live_games_avg(list_of_games, offset, param):
     return round(summation / offset, 2)
 
 
-def live_games_weighted_avg(list_of_games, offset, param):
+def live_games_weighted_avg(list_of_games: list, offset: int, param: str) -> float:
     c = 0
     summation = 0
     time_summation = 0
@@ -342,7 +338,7 @@ def live_games_weighted_avg(list_of_games, offset, param):
     return round(summation / time_summation, 2)
 
 
-def games_won(list_of_games, offset):
+def games_won(list_of_games: list, offset: int) -> int:
     c = 0
     won_games = 0
     while c < offset:
@@ -352,14 +348,14 @@ def games_won(list_of_games, offset):
     return won_games
 
 
-def first_last_date(list_of_games):
+def first_last_date(list_of_games: list) -> dict:
     min_time = str(list_of_games[-1]["gtime"])
     max_time = str(list_of_games[1]["gtime"])
 
     return {"min_time": min_time, "max_time": max_time}
 
 
-def opponents_matchups(list_of_games):
+def opponents_matchups(list_of_games: list) -> dict:
 
     all_opponents = {}
 
@@ -409,5 +405,5 @@ if __name__ == "__main__":
     h = LiveDateInit(first_date, second_date)
     print(h)
     print(h.error_message)
-    g = IndivParameterInit("asdfasdgasdg")
+    g = IndivParameterInit(("asdfasdgasdg", "laksjdflkajsf"))
     print(g)

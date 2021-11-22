@@ -31,7 +31,7 @@ async def help(ctx):
 # SINGLE PLAYER COMMANDS
 
 @bot.command()
-async def least(ctx, username, *args):
+async def least(ctx, username: str, *args):
     if not await num_processes_init(ctx):
         return None
 
@@ -117,7 +117,7 @@ async def numgames(ctx, username: str, *args):
 
 
 @bot.command()
-async def sub300(ctx, username, period="alltime"):
+async def sub300(ctx, username: str, period: str = "alltime"):
     if not await num_processes_init(ctx):
         return None
 
@@ -143,7 +143,7 @@ async def sub300(ctx, username, period="alltime"):
 # VERSUS COMMANDS
 
 @bot.command()
-async def vs(ctx, username, offset=10):
+async def vs(ctx, username: str, offset: int = 10):
     if not await num_processes_init(ctx):
         return None
 
@@ -159,15 +159,15 @@ async def vs(ctx, username, offset=10):
         return None
 
     # Calculates averages
-    apm_avg = jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'apm')
-    spm_avg = jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'spm')
-    pps_avg = jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'pps')
-    weight_apm = round(jstrisfunctions.live_games_weighted_avg(searched_games.all_stats, offset, 'attack') * 60, 2)
-    weight_spm = round(jstrisfunctions.live_games_weighted_avg(searched_games.all_stats, offset, 'sent') * 60, 2)
-    weight_pps = round(jstrisfunctions.live_games_weighted_avg(searched_games.all_stats, offset, 'pcs'), 2)
-    time_avg = jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'gametime')
-    players_avg = jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'players')
-    pos_avg = jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'pos')
+    apm_avg = str(jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'apm'))
+    spm_avg = str(jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'spm'))
+    pps_avg = str(jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'pps'))
+    weight_apm = str(round(jstrisfunctions.live_games_weighted_avg(searched_games.all_stats, offset, 'attack') * 60, 2))
+    weight_spm = str(round(jstrisfunctions.live_games_weighted_avg(searched_games.all_stats, offset, 'sent') * 60, 2))
+    weight_pps = str(round(jstrisfunctions.live_games_weighted_avg(searched_games.all_stats, offset, 'pcs'), 2))
+    time_avg = str(jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'gametime'))
+    players_avg = str(jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'players'))
+    pos_avg = str(jstrisfunctions.live_games_avg(searched_games.all_stats, offset, 'pos'))
     won_games = jstrisfunctions.games_won(searched_games.all_stats, offset)
 
     # Discord formatting
@@ -189,7 +189,7 @@ async def vs(ctx, username, offset=10):
 
 
 @bot.command()
-async def allmatchups(ctx, username, first_date="1000 months", last_date="0 days"):
+async def allmatchups(ctx, username: str, first_date: str = "1000 months", last_date: str = "0 days"):
     date_init = LiveDateInit(first_date, last_date)
     if date_init.has_error:
         await ctx.send(date_init.error_message)
@@ -238,7 +238,7 @@ async def allmatchups(ctx, username, first_date="1000 months", last_date="0 days
 
 
 @bot.command()
-async def vsmatchup(ctx, username, opponent, first_date="1000 months", last_date="0 days"):
+async def vsmatchup(ctx, username: str, opponent: str, first_date: str = "1000 months", last_date: str = "0 days"):
     username = username.lower()
     opponent = opponent.lower()
     date_init = LiveDateInit(first_date, last_date)
@@ -293,7 +293,7 @@ async def vsmatchup(ctx, username, opponent, first_date="1000 months", last_date
 
 # OTHER METHODS
 
-async def replay_send(ctx, my_ps):
+async def replay_send(ctx, my_ps: dict) -> None:
     embed = await embed_init(my_ps['username'])
 
     for i in my_ps:
@@ -308,7 +308,7 @@ async def replay_send(ctx, my_ps):
     await ctx.send(embed=embed)
 
 
-async def embed_init(username):
+async def embed_init(username: str) -> discord.Embed:
     embed = discord.Embed(
         title=username,
         url=f"https://jstris.jezevec10.com/u/{username}",
@@ -318,7 +318,7 @@ async def embed_init(username):
     return embed
 
 
-async def vs_matchup_embed(ctx, username, opponent, list_of_opponents):
+async def vs_matchup_embed(ctx, username: str, opponent: str, list_of_opponents: dict):
     embed = await embed_init(username)
 
     if opponent in list_of_opponents:
@@ -348,7 +348,7 @@ async def vs_matchup_embed(ctx, username, opponent, list_of_opponents):
     return embed
 
 
-async def num_processes_init(ctx):
+async def num_processes_init(ctx) -> bool:
     global num_processes
     num_processes += 1
     if num_processes > 5:

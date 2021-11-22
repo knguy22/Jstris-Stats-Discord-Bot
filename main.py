@@ -13,7 +13,7 @@ intents.members = True
 description = 'Third party bot to quickly gather Jstris stats on individual players'
 
 bot = commands.Bot(command_prefix='?', description=description, intents=intents, help_command=None)
-loop = asyncio.get_event_loop()
+LOOP = asyncio.get_event_loop()
 num_processes = 0
 
 
@@ -41,7 +41,7 @@ async def least(ctx, username, *args):
         await ctx.send("Invalid parameter")
 
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-    searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
+    searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                 UserIndivGames,
                                                 username, my_ps.game, my_ps.mode, my_ps.period)
     await num_processes_finish()
@@ -65,7 +65,7 @@ async def most(ctx, username: str, *args):
         await ctx.send("Invalid parameter")
 
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-    searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
+    searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                 UserIndivGames,
                                                 username, my_ps.game, my_ps.mode, my_ps.period)
     await num_processes_finish()
@@ -90,7 +90,7 @@ async def average(ctx, username: str, *args):
         await ctx.send("Invalid parameter")
 
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-    searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
+    searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                 UserIndivGames,
                                                 username, my_ps.game, my_ps.mode, my_ps.period)
     await num_processes_finish()
@@ -111,7 +111,7 @@ async def numgames(ctx, username: str, *args):
 
     my_ps = IndivParameterInit(args)
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-    searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
+    searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                 UserIndivGames,
                                                 username, my_ps.game, my_ps.mode, my_ps.period)
     await num_processes_finish()
@@ -135,7 +135,7 @@ async def sub300(ctx, username, period="alltime"):
     args = (period, '')
     my_ps = IndivParameterInit(args)
     period = my_ps.period
-    searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
+    searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                 UserIndivGames,
                                                 username, "3", "3", period)
     await num_processes_finish()
@@ -157,7 +157,7 @@ async def vs(ctx, username, offset=10):
         return None
 
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-    searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
+    searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
                                                 username, offset)
     await num_processes_finish()
@@ -200,6 +200,10 @@ async def vs(ctx, username, offset=10):
 @bot.command()
 async def allmatchups(ctx, username, first_date="1000 months", last_date="0 days"):
     date_init = LiveDateInit(first_date, last_date)
+    if date_init.has_error:
+        await ctx.send(date_init.error_message)
+        return 0
+
     first_date = date_init.first
     last_date = date_init.last
 
@@ -207,7 +211,7 @@ async def allmatchups(ctx, username, first_date="1000 months", last_date="0 days
         return None
 
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-    searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
+    searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
                                                 username, 1000000000, first_date, last_date)
     await num_processes_finish()
@@ -219,7 +223,6 @@ async def allmatchups(ctx, username, first_date="1000 months", last_date="0 days
     list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
 
     # Discord formatting stuff
-    # Get top 10 opponents
 
     embed = await embed_init(username)
 
@@ -248,6 +251,10 @@ async def vsmatchup(ctx, username, opponent, first_date="1000 months", last_date
     username = username.lower()
     opponent = opponent.lower()
     date_init = LiveDateInit(first_date, last_date)
+    if date_init.has_error:
+        await ctx.send(date_init.error_message)
+        return 0
+
     first_date = date_init.first
     last_date = date_init.last
 
@@ -255,8 +262,8 @@ async def vsmatchup(ctx, username, opponent, first_date="1000 months", last_date
         return None
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
 
-    # First do username's games
-    searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
+    # Username's games
+    searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
                                                 username, 10000000000, first_date, last_date)
 
@@ -267,19 +274,23 @@ async def vsmatchup(ctx, username, opponent, first_date="1000 months", last_date
     list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
     embed1 = await vs_matchup_embed(ctx, username, opponent, list_of_opponents)
 
-    # Second do opponent's games
+    # Opponent's games
     opp_first_date = list_of_opponents[opponent]["min_time"]
     opp_last_date = list_of_opponents[opponent]["max_time"]
+    print(opp_first_date, opp_last_date)
 
-    searched_games = await loop.run_in_executor(ThreadPoolExecutor(),
+    searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                 UserLiveGames,
                                                 opponent, 10000000, opp_first_date, opp_last_date)
+    # print(searched_games.all_stats)
     if searched_games.has_error:
         await ctx.send(ctx.author.mention)
         await ctx.send(searched_games.error_message)
         return None
     list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.all_stats)
     embed2 = await vs_matchup_embed(ctx, opponent, username, list_of_opponents)
+
+    # Finalizing
 
     await num_processes_finish()
     await init_message.delete()
@@ -319,22 +330,6 @@ async def embed_init(username):
 async def vs_matchup_embed(ctx, username, opponent, list_of_opponents):
     embed = await embed_init(username)
 
-    # for key in list_of_opponents:
-    #     if key is None:
-    #         continue
-    #     if key.lower() == opponent.lower():
-    #         winrate = list_of_opponents[key]["won"] / list_of_opponents[key]["games"] * 100
-    #         won_games = list_of_opponents[key]['won']
-    #         has_opponent = True
-    #         embed.add_field(name='**opponent:**', value=key, inline=True)
-    #         embed.add_field(name='**games won:**', value=f"{won_games}  ({winrate:.2f}%)", inline=True)
-    #         embed.add_field(name='**total games:**', value=list_of_opponents[key]["games"], inline=True)
-    #         embed.add_field(name='**apm:**', value=list_of_opponents[key]["apm"], inline=True)
-    #         embed.add_field(name='**spm:**', value=list_of_opponents[key]["spm"], inline=True)
-    #         embed.add_field(name='**pps:**', value=list_of_opponents[key]["pps"], inline=True)
-    #         embed.add_field(name='**apm (weighted):**', value=list_of_opponents[key]["wapm"], inline=True)
-    #         embed.add_field(name='**spm (weighted):**', value=list_of_opponents[key]["wspm"], inline=True)
-    #         embed.add_field(name='**pps (weighted):**', value=list_of_opponents[key]["wpps"], inline=True)
     if opponent in list_of_opponents:
         winrate = list_of_opponents[opponent]["won"] / list_of_opponents[opponent]["games"] * 100
         won_games = list_of_opponents[opponent]['won']

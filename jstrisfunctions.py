@@ -68,7 +68,7 @@ class LiveDateInit:
         num_days = self.is_time_ago_to_days(string)
         if num_days is None:
             self.has_error = True
-            self.error_message = f"Error: Not valid data formatting ({string})"
+            self.error_message = f"Error: Not valid date formatting ({string})"
             return None
         my_date = now - datetime.timedelta(days=num_days)
         my_date = my_date.strftime("%Y-%m-%d %H:%M:%S.%f")[:-7]

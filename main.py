@@ -1,13 +1,14 @@
 import discord
 from discord.ext import commands
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+import logging
 import jstrisfunctions
 from jstrisfunctions import LiveDateInit
 from jstrisfunctions import IndivParameterInit
 from jstrisuser import UserIndivGames
 from jstrisuser import UserLiveGames
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
-import logging
+
 
 intents = discord.Intents.default()
 intents.members = True
@@ -26,12 +27,12 @@ class GeneralMaintenance(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @BadgerBot.event
+    @commands.Cog.listener()
     async def on_ready(self):
         print(f'Logged in as {BadgerBot.user} (ID: {BadgerBot.user.id})')
         print('------')
 
-    @BadgerBot.command()
+    @commands.command()
     async def help(self, ctx):
         logging.info("Executing help")
         await ctx.send("https://docs.google.com/document/d/"
@@ -247,8 +248,10 @@ class VsCommands(commands.Cog):
         embed.add_field(name="**time (seconds):**", value=str(time_avg), inline=True)
         embed.add_field(name="**final position:**", value=str(pos_avg), inline=True)
         embed.add_field(name="**players:**", value=str(players_avg), inline=True)
-        embed.add_field(name="**games won:**", value=f"{won_games}  ({won_games / offset * 100:.2f}%)", inline=False)
-        embed.add_field(name="**number of games:**", value=str(offset), inline=False)
+        embed.add_field(name="**games won:**", value=f"{won_games}  "
+                                                     f"({won_games / len(searched_games.all_replays) * 100:.2f}%)",
+                        inline=False)
+        embed.add_field(name="**number of games:**", value=str(len(searched_games.all_replays)), inline=False)
         embed.set_footer(text='All of these values are averages. Weighted means weighted by time, not game.')
         await ctx.send(ctx.author.mention)
         await ctx.send(embed=embed)
@@ -366,6 +369,48 @@ class VsCommands(commands.Cog):
         await ctx.send(embed=embed2)
 
         logging.info("Finishing vsmatchup")
+
+    # @commands.command()
+    # async def vsprogress(self, ctx, username: str, first_date: str = "1000 months", last_date: str = "0 days"):
+    #     logging.info("Beginning allmatchups")
+    #     date_init = LiveDateInit(first_date, last_date)
+    #     if date_init.has_error:
+    #         await ctx.send(date_init.error_message)
+    #         return 0
+    #
+    #     first_date = date_init.first
+    #     last_date = date_init.last
+    #
+    #     if not await GeneralMaintenance.num_processes_init(ctx):
+    #         return None
+    #
+    #     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
+    #     searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
+    #                                                 UserLiveGames,
+    #                                                 username, 1000000000, first_date, last_date)
+    #     await GeneralMaintenance.num_processes_finish()
+    #     await init_message.delete()
+    #     if searched_games.has_error:
+    #         await ctx.send(ctx.author.mention)
+    #         await ctx.send(searched_games.error_message)
+    #         return None
+    #
+    #     all_games = searched_games.all_replays
+    #     list_of_times = [datetime.datetime.strptime(game['gtime'], "%Y-%m-%d %H:%M:%S") for game in all_games]
+    #     list_of_apms = [game['apm'] for game in all_games]
+    #     list_of_sizes = [5 for game in list_of_times]
+    #
+    #     plt.xlabel('Date')
+    #     plt.ylabel('Apm')
+    #     plt.title(f'{username}: Apm Over Time')
+    #     plt.ylim(top=150)
+    #     plt.scatter(list_of_times, list_of_apms, list_of_sizes)
+    #     plt.savefig('saved_figure.png')
+    #     with open('saved_figure.png', "rb") as fh:
+    #         f = discord.File(fh, filename='saved_figure.png')
+    #
+    #     await ctx.send(file=f)
+    #     plt.clf()
 
     @staticmethod
     async def vs_matchup_embed(ctx, username: str, opponent: str, list_of_opponents: dict):

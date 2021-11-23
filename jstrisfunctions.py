@@ -1,5 +1,7 @@
 import datetime
 import jstrishtml
+import logging
+logger = logging.getLogger(__name__)
 
 
 # Returns self.first and self.last as dates in the form of:
@@ -17,6 +19,9 @@ class LiveDateInit:
         :return self.first: "%Y-%m-%d %H:%M:%S"
                 self.last:"%Y-%m-%d %H:%M:%S"
         """
+
+        logging.info(f"LiveDateInit inputs: {first} {last}")
+
         self.first: str = first.lower()
         self.last: str = last.lower()
         self.has_error = False
@@ -36,6 +41,10 @@ class LiveDateInit:
 
         if not self.has_error:
             self.first_vs_last()
+            logging.info(self)
+
+        if self.has_error:
+            logging.info(self.error_message)
 
     def calendar_to_date(self, string: str) -> [None, str]:
 
@@ -133,6 +142,8 @@ class IndivParameterInit:
         self.mode = ""
         self.param = ""
 
+        logging.info(f"IndivParameterInit inputs: {my_tuple}")
+
         # NOTE: MY TUPLE MUST CONTAIN MORE THAN ONE INDEX FOR THIS TO WORK; ADD AN EXTRA EMPTY STRING IN THE
         # TUPLE IF NEEDED
         # checking for all settings in my_tuple
@@ -147,7 +158,7 @@ class IndivParameterInit:
         # sets defaults for unspecified settings in my_tuple
 
         self.default_settings()
-        print(self.game, self.mode, self.param, self.period, self.gamemode)
+        logging.info(self)
 
     def period_str_to_int(self, my_str: str) -> None:
         if my_str in ('day', 'Day', 'today', 'Today'):
@@ -314,17 +325,15 @@ def pc_finish_sprint(list_of_runs: list, mode: str) -> int:
             return i
 
 
-def num_games(list_of_runs: list) -> int:
-    return len(list_of_runs)
-
-
 def live_games_avg(list_of_games: list, offset: int, param: str) -> float:
     c = 0
     summation = 0
     while c < offset:
         summation += list_of_games[c][param]
         c += 1
-    return round(summation / offset, 2)
+        if c == len(list_of_games):
+            break
+    return round(summation / len(list_of_games), 2)
 
 
 def live_games_weighted_avg(list_of_games: list, offset: int, param: str) -> float:
@@ -335,6 +344,8 @@ def live_games_weighted_avg(list_of_games: list, offset: int, param: str) -> flo
         summation += list_of_games[c][param]
         time_summation += list_of_games[c]["gametime"]
         c += 1
+        if c == len(list_of_games):
+            break
     return round(summation / time_summation, 2)
 
 
@@ -345,6 +356,8 @@ def games_won(list_of_games: list, offset: int) -> int:
         if list_of_games[c]["pos"] == 1:
             won_games += 1
         c += 1
+        if c == len(list_of_games):
+            break
     return won_games
 
 
@@ -388,13 +401,13 @@ def opponents_matchups(list_of_games: list) -> dict:
 
     # Finding min and max time for each opponent
 
-    for key in all_opponents:
+    for opp in all_opponents:
 
         list_of_dates = []
         for game in list_of_games:
             if game['vs'] is None or game['players'] != 2:
                 continue
-            if game['vs'].lower() == key:
+            if game['vs'].lower() == opp:
                 list_of_dates.append(datetime.datetime.strptime(game['gtime'], "%Y-%m-%d %H:%M:%S"))
 
         min_time = list_of_dates[-1]
@@ -407,22 +420,22 @@ def opponents_matchups(list_of_games: list) -> dict:
                 min_time = list_of_dates[-m - 1]
 
             for m, n in enumerate(list_of_dates):
-                if list_of_dates[m + 2] < n < max_time:
+                if list_of_dates[m + 2] < list_of_dates[m + 1] < max_time:
                     break
-                max_time = n
+                max_time = list_of_dates[m + 1]
 
-        all_opponents[key]['min_time'] = str(min_time)
-        all_opponents[key]['max_time'] = str(max_time)
+        all_opponents[opp]['min_time'] = str(min_time)
+        all_opponents[opp]['max_time'] = str(max_time)
 
     # Calculate averages for relevant stats
 
-    for key in all_opponents:
-        all_opponents[key]['apm'] = round(all_opponents[key]['apm'] / all_opponents[key]['games'], 2)
-        all_opponents[key]['spm'] = round(all_opponents[key]['spm'] / all_opponents[key]['games'], 2)
-        all_opponents[key]['pps'] = round(all_opponents[key]['pps'] / all_opponents[key]['games'], 2)
-        all_opponents[key]['wapm'] = round(all_opponents[key]['wapm'] / all_opponents[key]['time_sum'] * 60, 2)
-        all_opponents[key]['wspm'] = round(all_opponents[key]['wspm'] / all_opponents[key]['time_sum'] * 60, 2)
-        all_opponents[key]['wpps'] = round(all_opponents[key]['wpps'] / all_opponents[key]['time_sum'], 2)
+    for opp in all_opponents:
+        all_opponents[opp]['apm'] = round(all_opponents[opp]['apm'] / all_opponents[opp]['games'], 2)
+        all_opponents[opp]['spm'] = round(all_opponents[opp]['spm'] / all_opponents[opp]['games'], 2)
+        all_opponents[opp]['pps'] = round(all_opponents[opp]['pps'] / all_opponents[opp]['games'], 2)
+        all_opponents[opp]['wapm'] = round(all_opponents[opp]['wapm'] / all_opponents[opp]['time_sum'] * 60, 2)
+        all_opponents[opp]['wspm'] = round(all_opponents[opp]['wspm'] / all_opponents[opp]['time_sum'] * 60, 2)
+        all_opponents[opp]['wpps'] = round(all_opponents[opp]['wpps'] / all_opponents[opp]['time_sum'], 2)
 
     # return all_opponents
     return dict(sorted(all_opponents.items(), key=lambda x: x[1]['games'], reverse=True))

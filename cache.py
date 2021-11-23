@@ -6,6 +6,8 @@ import jstrisuser
 import os
 from decimal import Decimal
 
+# STill WIP
+
 
 def cache_init(username: str, param_class) -> list:
     if type(param_class) == jstrisfunctions.IndivParameterInit:

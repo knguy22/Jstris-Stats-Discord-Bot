@@ -12,8 +12,8 @@ import logging
 intents = discord.Intents.default()
 intents.members = True
 description = 'Third party BadgerBot to quickly gather Jstris stats on individual players'
-
 BadgerBot = commands.Bot(command_prefix='?', description=description, intents=intents, help_command=None)
+
 LOOP = asyncio.get_event_loop()
 num_processes = 0
 
@@ -21,66 +21,41 @@ logging.basicConfig(level=logging.INFO, filename="logjstris.log", datefmt='%m/%d
                     format='%(levelname)s: %(module)s: %(message)s; %(asctime)s')
 
 
-@BadgerBot.event
-async def on_ready():
-    print(f'Logged in as {BadgerBot.user} (ID: {BadgerBot.user.id})')
-    print('------')
+# GENERAL PURPOSE STUFF
+class GeneralMaintenance:
+    def __init__(self, bot):
+        self.bot = bot
 
+    @BadgerBot.event
+    async def on_ready(self):
+        print(f'Logged in as {BadgerBot.user} (ID: {BadgerBot.user.id})')
+        print('------')
 
-@BadgerBot.command()
-async def vs(ctx, username: str, offset: int = 10):
-    logging.info("Beginning vs")
-    if not await num_processes_init(ctx):
-        return None
+    @BadgerBot.command()
+    async def help(self, ctx):
+        logging.info("Executing help")
+        await ctx.send("https://docs.google.com/document/d/1D54qjRTNmkOBXcvff1vpiph5E5txnd6J6R2oI9e6ZMM/edit?usp=sharing")
+        logging.info("Finish help")
 
-    init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-    searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
-                                                UserLiveGames,
-                                                username, offset)
-    await num_processes_finish()
-    await init_message.delete()
-    if searched_games.has_error:
-        await ctx.send(ctx.author.mention)
-        await ctx.send(searched_games.error_message)
-        return None
+    @staticmethod
+    async def num_processes_init(ctx) -> bool:
+        global num_processes
+        logging.info(f"Checking num processes: {num_processes}")
+        num_processes += 1
+        if num_processes > 5:
+            num_processes -= 1
+            logging.info(f"Max processes reached: {num_processes}")
+            await ctx.send(ctx.author.mention)
+            await ctx.send("Sorry, currently busy handling other requests. Please try again in a few minutes.")
+            return False
+        logging.info(f"Added one more process: {num_processes}")
+        return True
 
-    # Calculates averages
-    apm_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'apm')
-    spm_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'spm')
-    pps_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'pps')
-    weight_apm = round(jstrisfunctions.live_games_weighted_avg(searched_games.all_replays, offset, 'attack') * 60,
-                       2)
-    weight_spm = round(jstrisfunctions.live_games_weighted_avg(searched_games.all_replays, offset, 'sent') * 60, 2)
-    weight_pps = round(jstrisfunctions.live_games_weighted_avg(searched_games.all_replays, offset, 'pcs'), 2)
-    time_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'gametime')
-    players_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'players')
-    pos_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'pos')
-    won_games = jstrisfunctions.games_won(searched_games.all_replays, offset)
-
-    # Discord formatting
-    embed = await embed_init(username)
-    embed.add_field(name="**apm:**", value=str(apm_avg), inline=True)
-    embed.add_field(name="**spm:**", value=str(spm_avg), inline=True)
-    embed.add_field(name="**pps:**", value=str(pps_avg), inline=True)
-    embed.add_field(name="**apm (weighted):**", value=str(weight_apm), inline=True)
-    embed.add_field(name="**spm (weighted):**", value=str(weight_spm), inline=True)
-    embed.add_field(name="**pps (weighted):**", value=str(weight_pps), inline=True)
-    embed.add_field(name="**time (seconds):**", value=str(time_avg), inline=True)
-    embed.add_field(name="**final position:**", value=str(pos_avg), inline=True)
-    embed.add_field(name="**players:**", value=str(players_avg), inline=True)
-    embed.add_field(name="**games won:**", value=f"{won_games}  ({won_games / offset * 100:.2f}%)", inline=False)
-    embed.add_field(name="**number of games:**", value=str(offset), inline=False)
-    embed.set_footer(text='All of these values are averages. Weighted means weighted by time, not game.')
-    await ctx.send(ctx.author.mention)
-    await ctx.send(embed=embed)
-    logging.info("Finishing vs")
-
-
-@BadgerBot.command()
-async def help(ctx):
-    logging.info("Executing help")
-    await ctx.send("https://docs.google.com/document/d/1D54qjRTNmkOBXcvff1vpiph5E5txnd6J6R2oI9e6ZMM/edit?usp=sharing")
-    logging.info("Finish help")
+    @staticmethod
+    async def num_processes_finish():
+        global num_processes
+        num_processes -= 1
+        logging.info(f"Finish process: {num_processes}")
 
 
 # SINGLE PLAYER COMMANDS
@@ -92,7 +67,7 @@ class IndivCommands(commands.Cog):
     @commands.command()
     async def least(self, ctx, username: str, *args):
         logging.info("Executing least")
-        if not await num_processes_init(ctx):
+        if not await GeneralMaintenance.num_processes_init(ctx):
             return None
 
         my_ps = IndivParameterInit(args)
@@ -101,7 +76,7 @@ class IndivCommands(commands.Cog):
         searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                     UserIndivGames,
                                                     username, my_ps.game, my_ps.mode, my_ps.period)
-        await num_processes_finish()
+        await GeneralMaintenance.num_processes_finish()
 
         await init_message.delete()
         if searched_games.has_error:
@@ -117,7 +92,7 @@ class IndivCommands(commands.Cog):
     async def most(self, ctx, username: str, *args):
         logging.info("Executing most")
 
-        if not await num_processes_init(ctx):
+        if not await GeneralMaintenance.num_processes_init(ctx):
             return None
 
         my_ps = IndivParameterInit(args)
@@ -126,7 +101,7 @@ class IndivCommands(commands.Cog):
         searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                     UserIndivGames,
                                                     username, my_ps.game, my_ps.mode, my_ps.period)
-        await num_processes_finish()
+        await GeneralMaintenance.num_processes_finish()
 
         await init_message.delete()
         if searched_games.has_error:
@@ -140,7 +115,7 @@ class IndivCommands(commands.Cog):
     @commands.command()
     async def average(self, ctx, username: str, *args):
         logging.info("Beginning average")
-        if not await num_processes_init(ctx):
+        if not await GeneralMaintenance.num_processes_init(ctx):
             return None
 
         my_ps = IndivParameterInit(args)
@@ -149,7 +124,7 @@ class IndivCommands(commands.Cog):
         searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                     UserIndivGames,
                                                     username, my_ps.game, my_ps.mode, my_ps.period)
-        await num_processes_finish()
+        await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
         if searched_games.has_error:
             await ctx.send(ctx.author.mention)
@@ -162,7 +137,7 @@ class IndivCommands(commands.Cog):
     @commands.command()
     async def numgames(self, ctx, username: str, *args):
         logging.info("Beginning numgames")
-        if not await num_processes_init(ctx):
+        if not await GeneralMaintenance.num_processes_init(ctx):
             return None
 
         my_ps = IndivParameterInit(args)
@@ -170,7 +145,7 @@ class IndivCommands(commands.Cog):
         searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                     UserIndivGames,
                                                     username, my_ps.game, my_ps.mode, my_ps.period)
-        await num_processes_finish()
+        await GeneralMaintenance.num_processes_finish()
 
         await init_message.delete()
         if searched_games.has_error:
@@ -184,7 +159,7 @@ class IndivCommands(commands.Cog):
     @commands.command()
     async def sub300(self, ctx, username: str, period: str = "alltime"):
         logging.info("Beginning sub300")
-        if not await num_processes_init(ctx):
+        if not await GeneralMaintenance.num_processes_init(ctx):
             return None
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
@@ -195,7 +170,7 @@ class IndivCommands(commands.Cog):
         searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                     UserIndivGames,
                                                     username, "3", "3", period)
-        await num_processes_finish()
+        await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
         if searched_games.has_error:
             await ctx.send(ctx.author.mention)
@@ -231,6 +206,54 @@ class VsCommands(commands.Cog):
         self.bot = bot
 
     @commands.command()
+    async def vs(self, ctx, username: str, offset: int = 10):
+        logging.info("Beginning vs")
+        if not await GeneralMaintenance.num_processes_init(ctx):
+            return None
+
+        init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
+        searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
+                                                    UserLiveGames,
+                                                    username, offset)
+        await GeneralMaintenance.num_processes_finish()
+        await init_message.delete()
+        if searched_games.has_error:
+            await ctx.send(ctx.author.mention)
+            await ctx.send(searched_games.error_message)
+            return None
+
+        # Calculates averages
+        apm_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'apm')
+        spm_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'spm')
+        pps_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'pps')
+        weight_apm = round(jstrisfunctions.live_games_weighted_avg(searched_games.all_replays, offset, 'attack') * 60,
+                           2)
+        weight_spm = round(jstrisfunctions.live_games_weighted_avg(searched_games.all_replays, offset, 'sent') * 60, 2)
+        weight_pps = round(jstrisfunctions.live_games_weighted_avg(searched_games.all_replays, offset, 'pcs'), 2)
+        time_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'gametime')
+        players_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'players')
+        pos_avg = jstrisfunctions.live_games_avg(searched_games.all_replays, offset, 'pos')
+        won_games = jstrisfunctions.games_won(searched_games.all_replays, offset)
+
+        # Discord formatting
+        embed = await embed_init(username)
+        embed.add_field(name="**apm:**", value=str(apm_avg), inline=True)
+        embed.add_field(name="**spm:**", value=str(spm_avg), inline=True)
+        embed.add_field(name="**pps:**", value=str(pps_avg), inline=True)
+        embed.add_field(name="**apm (weighted):**", value=str(weight_apm), inline=True)
+        embed.add_field(name="**spm (weighted):**", value=str(weight_spm), inline=True)
+        embed.add_field(name="**pps (weighted):**", value=str(weight_pps), inline=True)
+        embed.add_field(name="**time (seconds):**", value=str(time_avg), inline=True)
+        embed.add_field(name="**final position:**", value=str(pos_avg), inline=True)
+        embed.add_field(name="**players:**", value=str(players_avg), inline=True)
+        embed.add_field(name="**games won:**", value=f"{won_games}  ({won_games / offset * 100:.2f}%)", inline=False)
+        embed.add_field(name="**number of games:**", value=str(offset), inline=False)
+        embed.set_footer(text='All of these values are averages. Weighted means weighted by time, not game.')
+        await ctx.send(ctx.author.mention)
+        await ctx.send(embed=embed)
+        logging.info("Finishing vs")
+
+    @commands.command()
     async def allmatchups(self, ctx, username: str, first_date: str = "1000 months", last_date: str = "0 days"):
         logging.info("Beginning allmatchups")
         date_init = LiveDateInit(first_date, last_date)
@@ -241,14 +264,14 @@ class VsCommands(commands.Cog):
         first_date = date_init.first
         last_date = date_init.last
 
-        if not await num_processes_init(ctx):
+        if not await GeneralMaintenance.num_processes_init(ctx):
             return None
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
         searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                     UserLiveGames,
                                                     username, 1000000000, first_date, last_date)
-        await num_processes_finish()
+        await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
         if searched_games.has_error:
             await ctx.send(ctx.author.mention)
@@ -300,7 +323,7 @@ class VsCommands(commands.Cog):
         first_date = date_init.first
         last_date = date_init.last
 
-        if not await num_processes_init(ctx):
+        if not await GeneralMaintenance.num_processes_init(ctx):
             return None
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
 
@@ -334,7 +357,7 @@ class VsCommands(commands.Cog):
 
         # Finalizing
 
-        await num_processes_finish()
+        await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
 
         await ctx.send(ctx.author.mention)
@@ -392,28 +415,10 @@ async def embed_init(username: str) -> discord.Embed:
     return embed
 
 
-async def num_processes_init(ctx) -> bool:
-    global num_processes
-    logging.info(f"Checking num processes: {num_processes}")
-    num_processes += 1
-    if num_processes > 5:
-        num_processes -= 1
-        logging.info(f"Max processes reached: {num_processes}")
-        await ctx.send(ctx.author.mention)
-        await ctx.send("Sorry, currently busy handling other requests. Please try again in a few minutes.")
-        return False
-    logging.info(f"Added one more process: {num_processes}")
-    return True
-
-
-async def num_processes_finish():
-    global num_processes
-    num_processes -= 1
-    logging.info(f"Finish process: {num_processes}")
-
 if __name__ == "__main__":
 
     # Token
+    BadgerBot.add_cog(GeneralMaintenance(BadgerBot))
     BadgerBot.add_cog(IndivCommands(BadgerBot))
     BadgerBot.add_cog(VsCommands(BadgerBot))
     BadgerBot.run('OTA2NzEyOTE0Njc1Nzg5ODU1.YYcoNA.K2uerr4Q3kwY3Rj3RnLWTemZNbQ')

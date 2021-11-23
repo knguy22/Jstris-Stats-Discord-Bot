@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO, filename="logjstris.log", datefmt='%m/%d
 
 
 # GENERAL PURPOSE STUFF
-class GeneralMaintenance:
+class GeneralMaintenance(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -34,7 +34,8 @@ class GeneralMaintenance:
     @BadgerBot.command()
     async def help(self, ctx):
         logging.info("Executing help")
-        await ctx.send("https://docs.google.com/document/d/1D54qjRTNmkOBXcvff1vpiph5E5txnd6J6R2oI9e6ZMM/edit?usp=sharing")
+        await ctx.send("https://docs.google.com/document/d/"
+                       "1D54qjRTNmkOBXcvff1vpiph5E5txnd6J6R2oI9e6ZMM/edit?usp=sharing")
         logging.info("Finish help")
 
     @staticmethod

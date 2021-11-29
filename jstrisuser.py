@@ -79,7 +79,7 @@ class UserLiveGames:
 
         while self.still_searching is True:
             url = f"https://jstris.jezevec10.com/api/u/{self.username}/live/games?offset={self.offset}"
-            self.request_50_live_games(url)
+            self.request_games(url)
             self.append_replays()
             self.offset += 50
 
@@ -161,7 +161,7 @@ class UserLiveGames:
             if self.curr_date_and_prev_dates[1] > self.curr_date_and_prev_dates[0] and not self.prev_date_strike_num:
                 self.prev_date_strike_num = 1
 
-    def request_50_live_games(self, url: str) -> None:
+    def request_games(self, url: str) -> None:
         """
 
         Stores a url's data into self.page_request
@@ -169,7 +169,7 @@ class UserLiveGames:
         logging.info(f"Getting url: {url}")
         r = self.my_session.get(url)
         self.page_request = r.json()
-        time.sleep(1.5)
+        time.sleep(0)
         if len(self.page_request) < 50:
             self.still_searching = False
 
@@ -199,42 +199,11 @@ class UserLiveGames:
 
         list_of_dates = [jstrisfunctions.DateInit.str_to_datetime(i['gtime']) for i in self.all_replays]
 
-        min_time = list_of_dates[-1]
-        max_time = list_of_dates[0]
+        results = jstrisfunctions.first_last_date(list_of_dates)
 
-        if len(list_of_dates) > 3:
-            min_date_found = False
-            max_date_found = False
-
-            # Min date
-            for m, n in enumerate(list_of_dates):
-                if m + 2 == len(list_of_dates):
-                    break
-                if list_of_dates[-m - 2] > list_of_dates[-m - 1] > min_time:
-                    min_date_found = True
-                    break
-
-                min_time = list_of_dates[-m - 1]
-
-            # Max date
-            for m, n in enumerate(list_of_dates):
-                if m + 2 == len(list_of_dates):
-                    break
-                if list_of_dates[m + 2] < list_of_dates[m + 1] < max_time:
-                    max_date_found = True
-                    break
-                max_time = list_of_dates[m + 1]
-
-            if not min_date_found:
-                min_time = list_of_dates[-1]
-            if not max_date_found:
-                max_time = list_of_dates[0]
-
-        self.first_date_str = str(min_time)
-        self.last_date_str = str(max_time)
-        logging.info(f"Final min_time and max_time: {min_time}, {max_time}")
-        self.first_date_datetime = min_time
-        self.last_date_datetime = max_time
+        self.first_date_str = str(results[0])
+        self.last_date_str = str(results[1])
+        logging.info(f"Final min_time and max_time: {self.first_date_str}, {self.last_date_str}")
 
 # Returns all replay data of a username's specific gamemode
 # game: 1 = sprint, 3 = cheese, 4 = survival, 5 = ultra, 7 = 20TSD, 8 = PC Mode
@@ -276,8 +245,8 @@ class UserIndivGames:
         self.last_date = jstrisfunctions.DateInit.str_to_datetime(last_date)
         self.period = self.period_init()
 
-        logging.info(f"Beginning UserIndivGames: {self.username=}, {self.game=}, {self.mode=}, "
-                     f"{self.period=}, {self.first_date=}, {self.last_date=}")
+        logging.info(f"Beginning UserIndivGames: {self.username}, {self.game}, {self.mode}, "
+                     f"{self.period}, {self.first_date}, {self.last_date}")
 
         self.all_replays = []
         self.my_session = requests.session()
@@ -357,7 +326,7 @@ class UserIndivGames:
             else:
                 url = f"https://jstris.jezevec10.com/{gamemode}?display=5&user={self.username}&time={self.period}"
 
-            self.request_next_200_games(url)
+            self.request_games(url)
 
             # adds current page replays to list of all other replays so far
             self.page_200_replays_stats()
@@ -447,7 +416,7 @@ class UserIndivGames:
 
     def check_username_exists(self) -> None:
         my_url = f"https://jstris.jezevec10.com/u/{self.username}"
-        self.request_next_200_games(url=my_url)
+        self.request_games(url=my_url)
         if "<p>Requested link is invalid.</p>" in self.page_request:
             self.has_error = True
             self.error_message = f"{self.username}: Not valid username"
@@ -491,7 +460,7 @@ class UserIndivGames:
             return '4'
         return '0'
 
-    def request_next_200_games(self, url: str) -> None:
+    def request_games(self, url: str) -> None:
         """
 
         Stores a url's data into self.page_request
@@ -622,11 +591,16 @@ if __name__ == "__main__":
     # stats.sort_stats(pstats.SortKey.TIME)
     # stats.print_stats()
 
-    g = jstrisfunctions.DateInit(first='15 days', last='3 days')
+    # g = jstrisfunctions.DateInit(first='15 days', last='3 days')
+    #
+    # h = UserIndivGames(username='truebulge', game='3', mode='3', first_date=g.first, last_date=g.last)
 
-    h = UserIndivGames(username='truebulge', game='3', mode='3', first_date=g.first, last_date=g.last)
+    h = UserLiveGames(username='sio')
 
-    print(h.all_replays)
+    print(h.first_date_str, h.last_date_str)
+
+    g = jstrisfunctions.opponents_matchups(h.all_replays)
+    print(g)
     # h = UserLiveGames("mylifeisacircle", num_games=10000000)
 
     # print(h.username)

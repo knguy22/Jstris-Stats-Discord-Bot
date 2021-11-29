@@ -29,7 +29,7 @@ def time_string(s: str) -> str:
             example without minutes:
                 <td><strong>2.798</strong></td>
     Output:
-        float: time in seconds rounded to 3 digits
+        string: time in clock format
     """
 
     s = s.replace('<strong>', '')
@@ -195,3 +195,8 @@ def clock_to_seconds(s: str) -> float:
 
 def seconds_to_clock(s: float) -> str:
     return str(datetime.timedelta(seconds=s))[:-3]
+
+
+def datetime_to_str_naive(s: datetime) -> str:
+    s = str(s)
+    return s[:-6]

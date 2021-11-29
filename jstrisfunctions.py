@@ -404,41 +404,83 @@ def games_won(list_of_games: list, offset: int) -> int:
     return won_games
 
 
-def first_last_date(list_of_games: list) -> tuple:
-    list_of_dates = [DateInit.str_to_datetime(i['gtime']) for i in list_of_games]
+def first_last_date(list_of_dates: list) -> tuple:
+
+    num_check_dates = 5
+
+    min_curr_date_and_prev_dates = list(range(num_check_dates + 1))
+    for i, j in enumerate(min_curr_date_and_prev_dates):
+        min_curr_date_and_prev_dates[i] = DateInit.str_to_datetime("9999-02-01 00:00:00") \
+                                          + datetime.timedelta(days=i)
+
+    max_curr_date_and_prev_dates = list(range(num_check_dates + 1))
+    for i, j in enumerate(max_curr_date_and_prev_dates):
+        max_curr_date_and_prev_dates[i] = DateInit.str_to_datetime("0001-02-01 00:00:00") \
+                                          + datetime.timedelta(days=i)
 
     min_time = list_of_dates[-1]
     max_time = list_of_dates[0]
 
-    if len(list_of_dates) > 3:
-        min_date_found = False
-        max_date_found = False
+    if len(list_of_dates) > 6:
 
         # Min date
-        for m, n in enumerate(list_of_dates):
-            if m + 2 == len(list_of_dates):
-                break
-            if list_of_dates[-m - 2] > list_of_dates[-m - 1] > min_time:
-                min_date_found = True
-                break
 
-            min_time = list_of_dates[-m - 1]
+        list_of_dates.reverse()
+        for m, n in enumerate(list_of_dates):
+
+            min_curr_date_and_prev_dates.pop(-1)
+            min_curr_date_and_prev_dates.insert(0, n)
+
+            if sorted(min_curr_date_and_prev_dates, reverse=True) == min_curr_date_and_prev_dates:
+                min_time = list_of_dates[m - num_check_dates]
+                break
 
         # Max date
+
+        list_of_dates.reverse()
         for m, n in enumerate(list_of_dates):
-            if m + 2 == len(list_of_dates):
-                break
-            if list_of_dates[m + 2] < list_of_dates[m + 1] < max_time:
-                max_date_found = True
-                break
-            max_time = list_of_dates[m + 1]
 
-        if not min_date_found:
-            min_time = list_of_dates[-1]
-        if not max_date_found:
-            max_time = list_of_dates[0]
+            max_curr_date_and_prev_dates.pop(-1)
+            max_curr_date_and_prev_dates.insert(0, n)
 
-        return min_time, max_time
+            if sorted(max_curr_date_and_prev_dates) == max_curr_date_and_prev_dates:
+                max_time = list_of_dates[m - num_check_dates]
+                break
+
+    return min_time, max_time
+
+
+# def new_first_last_date(list_of_dates: list) -> tuple:
+#     if len(list_of_dates) == 1:
+#         return list_of_dates[0], list_of_dates[0],
+#     if len(list_of_dates) == 2:
+#         return min(list_of_dates), max(list_of_dates)
+#
+#     list_of_dates.reverse()
+#     still_pruning = True
+#
+#     while still_pruning:
+#         still_pruning = False
+#         new_list_of_dates = []
+#         for j, k in enumerate(list_of_dates):
+#             if j + 1 == len(list_of_dates):
+#                 break
+#             if not k > list_of_dates[j+1]:
+#                 new_list_of_dates.append(k)
+#             else:
+#                 still_pruning = True
+#         list_of_dates = new_list_of_dates
+#
+#     print(list_of_dates)
+#
+#     if len(list_of_dates) == 1:
+#         return list_of_dates[0], list_of_dates[0],
+#     if len(list_of_dates) == 2:
+#         return min(list_of_dates), max(list_of_dates)
+#
+#     min_time = list_of_dates[0]
+#     max_time = list_of_dates[-1]
+#     return min_time, max_time
 
 
 def opponents_matchups(list_of_games: list) -> dict:
@@ -481,39 +523,14 @@ def opponents_matchups(list_of_games: list) -> dict:
             if game['vs'] is None or game['players'] != 2:
                 continue
             if game['vs'].lower() == opp:
-                list_of_dates.append(DateInit.str_to_datetime(game['gtime'], use_local=True))
+                list_of_dates.append(DateInit.str_to_datetime(game['gtime']))
 
         # Finding min and max time for each opponent
+        print(opp)
+        min_max_time = first_last_date(list_of_dates)
 
-        min_time = list_of_dates[-1]
-        max_time = list_of_dates[0]
-
-        if len(list_of_dates) > 3:
-            min_date_found = False
-            max_date_found = False
-            for m, n in enumerate(list_of_dates):
-                if m + 2 == len(list_of_dates):
-                    break
-                if list_of_dates[-m - 2] > list_of_dates[-m - 1] > min_time:
-                    min_date_found = True
-                    break
-                min_time = list_of_dates[-m - 1]
-
-            for m, n in enumerate(list_of_dates):
-                if m + 2 == len(list_of_dates):
-                    break
-                if list_of_dates[m + 2] < list_of_dates[m + 1] < max_time:
-                    max_date_found = True
-                    break
-                max_time = list_of_dates[m + 1]
-
-            if not min_date_found:
-                min_time = list_of_dates[-1]
-            if not max_date_found:
-                max_time = list_of_dates[0]
-
-        all_opponents[opp]['min_time'] = str(min_time)
-        all_opponents[opp]['max_time'] = str(max_time)
+        all_opponents[opp]['min_time'] = jstrishtml.datetime_to_str_naive(min_max_time[0])
+        all_opponents[opp]['max_time'] = jstrishtml.datetime_to_str_naive(min_max_time[1])
 
     # Calculate averages for relevant stats
 

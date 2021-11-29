@@ -142,10 +142,14 @@ class DateInit:
         return a
 
     def first_vs_last(self) -> None:
-        first = self.str_to_datetime(self.first)
-        last = self.str_to_datetime(self.last)
-        if first > last:
-            self.first, self.last = self.last, self.first
+        try:
+            first = self.str_to_datetime(self.first)
+            last = self.str_to_datetime(self.last)
+            if first > last:
+                self.first, self.last = self.last, self.first
+        except ValueError:
+            self.has_error = True
+            self.error_message = f'At least one date does not exist ({self.first}, {self.last})'
 
     def __repr__(self) -> str:
         if self.has_error:
@@ -492,10 +496,10 @@ def opponents_matchups(list_of_games: list) -> dict:
 
 
 if __name__ == "__main__":
-    first_date = 'asdfasgd'
+    first_date = 'march 0, 2021'
     second_date = 'march 5, 2021'
     h = DateInit(first_date, second_date)
     print(h)
     print(h.error_message)
-    g = IndivParameterInit(('cheese', 'july 31, 2020', 'august 3 2021'))
+    g = IndivParameterInit(('cheese', 'july 12, 2020', 'august 51 2021'))
     print(g)

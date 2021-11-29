@@ -199,4 +199,6 @@ def seconds_to_clock(s: float) -> str:
 
 def datetime_to_str_naive(s: datetime) -> str:
     s = str(s)
-    return s[:-6]
+    if "+" in s:
+        return s[:-6]
+    return s

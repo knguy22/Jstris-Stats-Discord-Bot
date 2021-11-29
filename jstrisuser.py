@@ -169,7 +169,7 @@ class UserLiveGames:
         logging.info(f"Getting url: {url}")
         r = self.my_session.get(url)
         self.page_request = r.json()
-        time.sleep(0)
+        time.sleep(1.5)
         if len(self.page_request) < 50:
             self.still_searching = False
 
@@ -177,7 +177,7 @@ class UserLiveGames:
         my_url = f"https://jstris.jezevec10.com/api/u/{self.username}/live/games?offset=0"
         r = self.my_session.get(my_url)
         self.page_request = r.json()
-        time.sleep(1)
+        time.sleep(1.5)
         if "error" in self.page_request:
             self.has_error = True
             self.error_message = f"{self.username}: Not valid username"
@@ -199,7 +199,7 @@ class UserLiveGames:
 
         list_of_dates = [jstrisfunctions.DateInit.str_to_datetime(i['gtime']) for i in self.all_replays]
 
-        results = jstrisfunctions.first_last_date(list_of_dates)
+        results = jstrisfunctions.new_first_last_date(list_of_dates)
 
         self.first_date_str = str(results[0])
         self.last_date_str = str(results[1])
@@ -601,17 +601,6 @@ if __name__ == "__main__":
 
     g = jstrisfunctions.opponents_matchups(h.all_replays)
     print(g)
-    # h = UserLiveGames("mylifeisacircle", num_games=10000000)
 
-    # print(h.username)
-    # print(h.first_date_str, h.last_date_str)
-    # a = jstrisfunctions.opponents_matchups(h.all_replays)
-    # print(a)
-    # print(a["vince_hd"])
-
-    # h = UserLiveGames("vince_hd", num_games=200000, first_date=h.first_date_str, last_date=h.last_date_str)
-    # print(h.username)
-    # print(h.first_date_str, h.last_date_str)
-    # print(len(h.all_replays))
-    # b = jstrisfunctions.opponents_matchups(h.all_replays)
-    # print(b['cloak'])
+    k = UserLiveGames(username='octuple8', first_date=g['octuple8']['min_time'], last_date=g['octuple8']['max_time'])
+    print(jstrisfunctions.opponents_matchups(k.all_replays))

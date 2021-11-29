@@ -66,11 +66,15 @@ class DateInit:
             self.error_message = "Error: Not valid date formatting"
             return None
 
-        if len(str_list) >= 2:
-            num_day = str_list[1]
         if len(str_list) == 3:
             num_year = str_list[2]
-        if len(num_day) == 1:
+            num_day = str_list[1]
+        elif len(str_list) == 2:
+            if int(str_list[1]) <= 31:
+                num_day = str_list[1]
+            else:
+                num_year = str_list[1]
+        elif len(num_day) == 1:
             num_day = "0" + num_day
         return f"{num_year}-{num_month}-{num_day} 00:00:00"
 
@@ -496,10 +500,9 @@ def opponents_matchups(list_of_games: list) -> dict:
 
 
 if __name__ == "__main__":
-    first_date = 'march 0, 2021'
-    second_date = 'march 5, 2021'
+    first_date = 'august 2010'
+    second_date = 'september 2020'
     h = DateInit(first_date, second_date)
     print(h)
-    print(h.error_message)
-    g = IndivParameterInit(('cheese', 'july 12, 2020', 'august 51 2021'))
+    g = IndivParameterInit(('cheese', 'july 12, 2020', 'august 2021'))
     print(g)

@@ -4,7 +4,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import logging
 import jstrisfunctions
-from jstrisfunctions import LiveDateInit
+from jstrisfunctions import DateInit
 from jstrisfunctions import IndivParameterInit
 from jstrisuser import UserIndivGames
 from jstrisuser import UserLiveGames
@@ -77,7 +77,7 @@ class IndivCommands(commands.Cog):
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
         searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                     UserIndivGames,
-                                                    username, my_ps.game, my_ps.mode, my_ps.period)
+                                                    username, my_ps.game, my_ps.mode, my_ps.first_date, my_ps.last_date)
         await GeneralMaintenance.num_processes_finish()
 
         await init_message.delete()
@@ -102,7 +102,7 @@ class IndivCommands(commands.Cog):
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
         searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                     UserIndivGames,
-                                                    username, my_ps.game, my_ps.mode, my_ps.period)
+                                                    username, my_ps.game, my_ps.mode, my_ps.first_date, my_ps.last_date)
         await GeneralMaintenance.num_processes_finish()
 
         await init_message.delete()
@@ -125,7 +125,7 @@ class IndivCommands(commands.Cog):
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
         searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                     UserIndivGames,
-                                                    username, my_ps.game, my_ps.mode, my_ps.period)
+                                                    username, my_ps.game, my_ps.mode, my_ps.first_date, my_ps.last_date)
         await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
         if searched_games.has_error:
@@ -146,7 +146,7 @@ class IndivCommands(commands.Cog):
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
         searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                     UserIndivGames,
-                                                    username, my_ps.game, my_ps.mode, my_ps.period)
+                                                    username, my_ps.game, my_ps.mode, my_ps.first_date, my_ps.last_date)
         await GeneralMaintenance.num_processes_finish()
 
         await init_message.delete()
@@ -159,19 +159,17 @@ class IndivCommands(commands.Cog):
         logging.info("Finishing numgames")
 
     @commands.command()
-    async def sub300(self, ctx, username: str, period: str = "alltime"):
+    async def sub300(self, ctx, username: str, *args):
         logging.info("Beginning sub300")
         if not await GeneralMaintenance.num_processes_init(ctx):
             return None
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
 
-        args = (period, '')
         my_ps = IndivParameterInit(args)
-        period = my_ps.period
         searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                     UserIndivGames,
-                                                    username, "3", "3", period)
+                                                    username, "3", "3", my_ps.first_date, my_ps.last_date)
         await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
         if searched_games.has_error:
@@ -260,7 +258,7 @@ class VsCommands(commands.Cog):
     @commands.command()
     async def allmatchups(self, ctx, username: str, first_date: str = "1000 months", last_date: str = "0 days"):
         logging.info("Beginning allmatchups")
-        date_init = LiveDateInit(first_date, last_date)
+        date_init = DateInit(first_date, last_date)
         if date_init.has_error:
             await ctx.send(date_init.error_message)
             return 0
@@ -319,7 +317,7 @@ class VsCommands(commands.Cog):
         logging.info("Beginning vsmatchup")
         username = username.lower()
         opponent = opponent.lower()
-        date_init = LiveDateInit(first_date, last_date)
+        date_init = DateInit(first_date, last_date)
         if date_init.has_error:
             await ctx.send(date_init.error_message)
             return 0
@@ -373,7 +371,7 @@ class VsCommands(commands.Cog):
     # @commands.command()
     # async def vsprogress(self, ctx, username: str, first_date: str = "1000 months", last_date: str = "0 days"):
     #     logging.info("Beginning allmatchups")
-    #     date_init = LiveDateInit(first_date, last_date)
+    #     date_init = DateInit(first_date, last_date)
     #     if date_init.has_error:
     #         await ctx.send(date_init.error_message)
     #         return 0
@@ -468,3 +466,10 @@ if __name__ == "__main__":
     BadgerBot.add_cog(IndivCommands(BadgerBot))
     BadgerBot.add_cog(VsCommands(BadgerBot))
     BadgerBot.run('OTA2NzEyOTE0Njc1Nzg5ODU1.YYcoNA.K2uerr4Q3kwY3Rj3RnLWTemZNbQ')
+
+
+# To do list
+# Standardize time periods across versus and indiv classes
+# Allow for time period parameters in indiv
+# Make min and max time into a standard function
+# Complete the cache

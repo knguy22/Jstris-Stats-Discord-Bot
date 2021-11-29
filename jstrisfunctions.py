@@ -1,4 +1,5 @@
 import datetime
+import pytz
 import jstrishtml
 import logging
 logger = logging.getLogger(__name__)
@@ -7,7 +8,7 @@ logger = logging.getLogger(__name__)
 # Returns self.first and self.last as dates in the form of:
 # 2021-10-29 09:25:55
 
-class LiveDateInit:
+class DateInit:
 
     def __init__(self, first: str, last: str) -> None:
         """
@@ -20,7 +21,7 @@ class LiveDateInit:
                 self.last:"%Y-%m-%d %H:%M:%S"
         """
 
-        logging.info(f"LiveDateInit inputs: {first} {last}")
+        logging.info(f"DateInit inputs: {first} {last}")
 
         self.first: str = first.lower()
         self.last: str = last.lower()
@@ -73,7 +74,7 @@ class LiveDateInit:
         return f"{num_year}-{num_month}-{num_day} 00:00:00"
 
     def is_time_ago_to_date(self, string: str) -> [None, str]:
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(tz=pytz.timezone('CET'))
         num_days = self.is_time_ago_to_days(string)
         if num_days is None:
             self.has_error = True
@@ -90,6 +91,18 @@ class LiveDateInit:
         num_months = 0
         days_list = ["days", 'Days', "day", "Day", "DAY", "DAYS"]
         months_list = ["months", 'Months', "month", "Month", "MONTH", "MONTHS"]
+
+        if len(str_list) == 1:
+            if str_list[0].lower() in ["day", 'today']:
+                return 1
+            if str_list[0].lower() == "week":
+                return 7
+            if str_list[0].lower() == 'month':
+                return 30
+            if str_list[0].lower() == 'year':
+                return 365
+            if str_list[0].lower() == 'alltime':
+                return 10000000
 
         if not set(str_list) & set(days_list) and not set(str_list) & set(months_list):
             return None
@@ -117,16 +130,26 @@ class LiveDateInit:
                 is_time_ago = True
         return is_time_ago
 
+    @staticmethod
+    def str_to_datetime(string: str, use_local: bool = False) -> datetime:
+
+        if use_local:
+            return datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
+
+        a = datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
+        a = a.replace(tzinfo=pytz.timezone('CET'))
+        return a
+
     def first_vs_last(self) -> None:
-        first = datetime.datetime.strptime(self.first, "%Y-%m-%d %H:%M:%S")
-        last = datetime.datetime.strptime(self.last, "%Y-%m-%d %H:%M:%S")
+        first = self.str_to_datetime(self.first)
+        last = self.str_to_datetime(self.last)
         if first > last:
             self.first, self.last = self.last, self.first
 
     def __repr__(self) -> str:
         if self.has_error:
-            return f"LiveDateInit({self.error_message})"
-        return f"LiveDateInit(first: {self.first}, last: {self.last})"
+            return f"DateInit({self.error_message})"
+        return f"DateInit({self.first=}, {self.last=})"
 
 
 # Returns self.game, self.mode, self.period, self.param
@@ -138,9 +161,10 @@ class IndivParameterInit:
     def __init__(self, my_tuple: tuple) -> None:
         self.gamemode = ""
         self.game = ""
-        self.period = ""
         self.mode = ""
         self.param = ""
+        self.first_date = None
+        self.last_date = None
 
         logging.info(f"IndivParameterInit inputs: {my_tuple}")
 
@@ -150,27 +174,37 @@ class IndivParameterInit:
 
         for i in my_tuple:
             self.gamemode_init(i)
-            self.period_str_to_int(i)
 
         for i in my_tuple:
             self.param_init(i, self.gamemode)
+
+        # sets both self.first and self.last
+        for i, j in enumerate(my_tuple):
+            for k, l in enumerate(my_tuple):
+                if i == k:
+                    continue
+                potential_dates = DateInit(first=j, last=l)
+                if not potential_dates.has_error:
+                    self.first_date = potential_dates.first
+                    self.last_date = potential_dates.last
+                    break
+            else:
+                continue
+            break
+
+        # sets only self.first
+        if self.first_date is None and self.last_date is None:
+            for i in my_tuple:
+                potential_first_date = DateInit(first=i, last=i)
+                if not potential_first_date.has_error:
+                    self.first_date = potential_first_date.first
+                    self.last_date = "9999-01-01 00:00:00"
+                    break
 
         # sets defaults for unspecified settings in my_tuple
 
         self.default_settings()
         logging.info(self)
-
-    def period_str_to_int(self, my_str: str) -> None:
-        if my_str in ('day', 'Day', 'today', 'Today'):
-            self.period = '1'
-        elif my_str in ("week", 'Week'):
-            self.period = '2'
-        elif my_str in ("month", "Month"):
-            self.period = "3"
-        elif my_str in ("year", "Year"):
-            self.period = '4'
-        elif my_str in ('alltime', "Alltime"):
-            self.period = '0'
 
     def param_init(self, my_param: str, game: str) -> None:
         if game in ('ultra', 'Ultra') and my_param in ("ppb", 'PPB', 'Ppb'):
@@ -229,10 +263,6 @@ class IndivParameterInit:
             self.mode = '1'
             self.gamemode = "sprint"
 
-        if self.period == "":
-            self.period = "alltime"
-            self.period = 0
-
         if self.param == "":
             if self.gamemode in 'ultra':
                 self.param = "score"
@@ -243,9 +273,13 @@ class IndivParameterInit:
             else:
                 self.param = "time"
 
+        if self.first_date is None and self.last_date is None:
+            self.first_date = "0001-01-01 00:00:00"
+            self.last_date = "9999-01-01 00:00:00"
+
     def __repr__(self) -> str:
-        return f"IndivParameterInit(gamemode: {self.gamemode}, game: {self.game}, " \
-               f"mode: {self.mode}, period: {self.period}, param: {self.param})"
+        return f"IndivParameterInit({self.gamemode=}, {self.game=}, {self.mode=}, {self.param=}," \
+               f" {self.first_date=}, {self.last_date=})"
 
 
 def sub300(listofruns: list) -> int:
@@ -309,7 +343,7 @@ def average_(list_of_runs: list, my_param: str) -> [float, str]:
     return round(stat_average/len(list_of_runs), 2)
 
 
-def pc_finish_sprint(list_of_runs: list, mode: str) -> int:
+def pc_finish_sprint(list_of_runs: list, mode: str) -> dict:
     lines = 0
     if mode == "2":
         lines = 20
@@ -408,21 +442,36 @@ def opponents_matchups(list_of_games: list) -> dict:
             if game['vs'] is None or game['players'] != 2:
                 continue
             if game['vs'].lower() == opp:
-                list_of_dates.append(datetime.datetime.strptime(game['gtime'], "%Y-%m-%d %H:%M:%S"))
+                list_of_dates.append(DateInit.str_to_datetime(game['gtime'], use_local=True))
+
+        # Finding min and max time for each opponent
 
         min_time = list_of_dates[-1]
         max_time = list_of_dates[0]
 
         if len(list_of_dates) > 3:
+            min_date_found = False
+            max_date_found = False
             for m, n in enumerate(list_of_dates):
+                if m + 2 == len(list_of_dates):
+                    break
                 if list_of_dates[-m - 2] > list_of_dates[-m - 1] > min_time:
+                    min_date_found = True
                     break
                 min_time = list_of_dates[-m - 1]
 
             for m, n in enumerate(list_of_dates):
+                if m + 2 == len(list_of_dates):
+                    break
                 if list_of_dates[m + 2] < list_of_dates[m + 1] < max_time:
+                    max_date_found = True
                     break
                 max_time = list_of_dates[m + 1]
+
+            if not min_date_found:
+                min_time = list_of_dates[-1]
+            if not max_date_found:
+                max_time = list_of_dates[0]
 
         all_opponents[opp]['min_time'] = str(min_time)
         all_opponents[opp]['max_time'] = str(max_time)
@@ -444,8 +493,8 @@ def opponents_matchups(list_of_games: list) -> dict:
 if __name__ == "__main__":
     first_date = 'asdfasgd'
     second_date = 'march 5, 2021'
-    h = LiveDateInit(first_date, second_date)
+    h = DateInit(first_date, second_date)
     print(h)
     print(h.error_message)
-    g = IndivParameterInit(("asdfasdgasdg", "laksjdflkajsf"))
+    g = IndivParameterInit(('cheese', '1 day'))
     print(g)

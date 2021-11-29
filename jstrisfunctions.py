@@ -57,6 +57,7 @@ class DateInit:
                        'december': '12'}
 
         str_list = string.split(" ")
+        str_list = [i.replace(',', '') for i in str_list]
 
         if str_list[0] in months_dict:
             num_month = months_dict[str_list[0]]
@@ -66,7 +67,7 @@ class DateInit:
             return None
 
         if len(str_list) >= 2:
-            num_day = str_list[1][0]
+            num_day = str_list[1]
         if len(str_list) == 3:
             num_year = str_list[2]
         if len(num_day) == 1:
@@ -149,7 +150,7 @@ class DateInit:
     def __repr__(self) -> str:
         if self.has_error:
             return f"DateInit({self.error_message})"
-        return f"DateInit({self.first=}, {self.last=})"
+        return f"DateInit({self.first}, {self.last})"
 
 
 # Returns self.game, self.mode, self.period, self.param
@@ -278,8 +279,8 @@ class IndivParameterInit:
             self.last_date = "9999-01-01 00:00:00"
 
     def __repr__(self) -> str:
-        return f"IndivParameterInit({self.gamemode=}, {self.game=}, {self.mode=}, {self.param=}," \
-               f" {self.first_date=}, {self.last_date=})"
+        return f"IndivParameterInit({self.gamemode}, {self.game}, {self.mode}, {self.param}," \
+               f" {self.first_date}, {self.last_date})"
 
 
 def sub300(listofruns: list) -> int:
@@ -496,5 +497,5 @@ if __name__ == "__main__":
     h = DateInit(first_date, second_date)
     print(h)
     print(h.error_message)
-    g = IndivParameterInit(('cheese', '1 day'))
+    g = IndivParameterInit(('cheese', 'july 31, 2020', 'august 3 2021'))
     print(g)

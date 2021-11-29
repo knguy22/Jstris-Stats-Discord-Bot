@@ -291,10 +291,10 @@ class IndivParameterInit:
                f" {self.first_date}, {self.last_date})"
 
 
-def sub300(listofruns: list) -> int:
+def subblocks(listofruns: list, blocks: int) -> int:
     c = 0
     for i in listofruns:
-        if i["blocks"] < 300:
+        if i["blocks"] < blocks:
             c += 1
     return c
 
@@ -404,11 +404,41 @@ def games_won(list_of_games: list, offset: int) -> int:
     return won_games
 
 
-def first_last_date(list_of_games: list) -> dict:
-    min_time = str(list_of_games[-1]["gtime"])
-    max_time = str(list_of_games[1]["gtime"])
+def first_last_date(list_of_games: list) -> tuple:
+    list_of_dates = [DateInit.str_to_datetime(i['gtime']) for i in list_of_games]
 
-    return {"min_time": min_time, "max_time": max_time}
+    min_time = list_of_dates[-1]
+    max_time = list_of_dates[0]
+
+    if len(list_of_dates) > 3:
+        min_date_found = False
+        max_date_found = False
+
+        # Min date
+        for m, n in enumerate(list_of_dates):
+            if m + 2 == len(list_of_dates):
+                break
+            if list_of_dates[-m - 2] > list_of_dates[-m - 1] > min_time:
+                min_date_found = True
+                break
+
+            min_time = list_of_dates[-m - 1]
+
+        # Max date
+        for m, n in enumerate(list_of_dates):
+            if m + 2 == len(list_of_dates):
+                break
+            if list_of_dates[m + 2] < list_of_dates[m + 1] < max_time:
+                max_date_found = True
+                break
+            max_time = list_of_dates[m + 1]
+
+        if not min_date_found:
+            min_time = list_of_dates[-1]
+        if not max_date_found:
+            max_time = list_of_dates[0]
+
+        return min_time, max_time
 
 
 def opponents_matchups(list_of_games: list) -> dict:

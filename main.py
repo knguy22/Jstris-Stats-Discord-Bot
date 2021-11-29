@@ -159,7 +159,11 @@ class IndivCommands(commands.Cog):
         logging.info("Finishing numgames")
 
     @commands.command()
-    async def sub300(self, ctx, username: str, *args):
+    async def subblocks(self, ctx, username: str, blocks: str, *args):
+        if not blocks.isdigit():
+            await ctx.send(f"Not valid blocks number: {blocks}")
+            return None
+
         logging.info("Beginning sub300")
         if not await GeneralMaintenance.num_processes_init(ctx):
             return None
@@ -176,10 +180,10 @@ class IndivCommands(commands.Cog):
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
         else:
-            a = jstrisfunctions.sub300(searched_games.all_replays)
+            a = jstrisfunctions.subblocks(searched_games.all_replays, int(blocks))
             await ctx.send(ctx.author.mention)
-            await ctx.send(f"{username} has {a} sub 300s")
-        logging.info("Finishing sub300")
+            await ctx.send(f"{username} has {a} sub {blocks}s")
+        logging.info("Finishing subblocks")
 
     @staticmethod
     async def replay_send(ctx, my_ps: dict) -> None:
@@ -469,7 +473,6 @@ if __name__ == "__main__":
 
 
 # To do list
-# Standardize time periods across versus and indiv classes
-# Allow for time period parameters in indiv
 # Make min and max time into a standard function
+# indiv stats for apm and such
 # Complete the cache

@@ -1,5 +1,5 @@
 import decimal
-import numpy
+from collections import OrderedDict
 
 import ijson
 import json
@@ -163,50 +163,19 @@ def vs_stats_reducer(all_stats: list) -> list:
 
 
 def duplicate_replay_deleter(my_list: list) -> list:
-    # new_dict = {}
-    # for index, value in enumerate(my_list):
-    #     new_dict[index] = value
-    #
-    # new_dict = new_dict.fromkeys()
-    # new_list = []
-    # for key in new_dict:
-    #     new_list.append(key)
+
+    frozen_set_list = []
+    for i in my_list:
+        frozen_set_list.append(frozenset(i.items()))
+
+    ordered_dict_list = OrderedDict.fromkeys(frozen_set_list)
+    ordered_dict_list = list(ordered_dict_list)
 
     new_list = []
-    for i in my_list:
-        if i not in new_list:
-            new_list.append(i)
+    for i in ordered_dict_list:
+        new_list.append(dict(i))
 
     return new_list
-
-    # new_list = numpy.array([])
-    # my_list = numpy.array(my_list)
-    # for i in my_list:
-    #     if i not in numpy.intersect1d(new_list, my_list):
-    #         numpy.append(new_list, i)
-    # new_list = list(new_list)
-
-    # tuple_list = []
-    #
-    # for i in my_list:
-    #     tuple_list.append(tuple(i.items()))
-    #
-    # new_tuple_list = numpy.array([])
-    # # tuple_list = numpy.array(tuple_list)
-    #
-    # for i in tuple_list:
-    #     # if i not in new_tuple_list:
-    #     numpy.append(new_tuple_list, i)
-    #
-    # new_tuple_list = list(new_tuple_list)
-    #
-    # new_dict_list = []
-    # for i in new_tuple_list:
-    #     new_dict_list.append(dict(i))
-    #
-    #
-    # new_dict_list = []
-    # return new_dict_list
 
 
 def decimal_to_float(my_dict: dict) -> dict:
@@ -229,13 +198,15 @@ if __name__ == "__main__":
     # append_file("dadiumcadmium")
     # append_file("sio")
 
-    cache_init('sio', jstrisfunctions.DateInit('7 months', '1 day'))
-    cache_init('truebulge', jstrisfunctions.IndivParameterInit(('cheese10', 'month')))
-    cache_init('jorge', jstrisfunctions.IndivParameterInit(('sprint', 'month')))
-    cache_init('jorge', jstrisfunctions.IndivParameterInit(('sprint', 'month')))
+    # cache_init('sio', jstrisfunctions.DateInit('7 months', '1 day'))
+    # cache_init('truebulge', jstrisfunctions.IndivParameterInit(('cheese10', 'month')))
 
 
-    # append_file("vince_hd")
-    # append_file("quickandsmart")
+    import cProfile
+    import pstats
 
-    # num_usernames_old_file()
+    with cProfile.Profile() as pr:
+        cache_init('truebulge', jstrisfunctions.IndivParameterInit(('sprint', 'month')))
+    stats = pstats.Stats(pr)
+    stats.sort_stats(pstats.SortKey.TIME)
+    stats.print_stats()

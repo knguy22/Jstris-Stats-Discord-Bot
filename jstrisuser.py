@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# Returns all_replays containing entries of following dict:
+# Returns all_replays_ever containing entries of following dict:
 # id, gid, cid, gametime, sent, attack, rep, pcs, players, r1v1, pos, vs, gtime, apm, spm, pps
 # Ex: {"id":201211863,"gid":"MX2G04","cid":88899054,"gametime":71.31,"sent":81,
 # "attack":94,"rep":"3","pcs":133,"players":4,"r1v1":0,"pos":1,"vs":"Torp","gtime":"2021-11-08 07:56:19"}
@@ -28,7 +28,7 @@ class UserLiveGames:
         :param first_date: str
         :param last_date: str
 
-        :return all_replays: (list)
+        :return all_replays_ever: (list)
                 parameters from jstris api + (apm, spm, pps)
 
         """
@@ -64,9 +64,6 @@ class UserLiveGames:
         self.check_username_exists()
         if not self.has_error:
             self.username_games()
-            self.check_has_games()
-            if not self.has_error:
-                self.get_first_last_date()
 
         if self.has_error:
             logging.warning(self.error_message)
@@ -167,6 +164,7 @@ class UserLiveGames:
         Stores a url's data into self.page_request
         """
         logging.info(f"Getting url: {url}")
+        print(url)
         r = self.my_session.get(url)
         self.page_request = r.json()
         time.sleep(1.5)
@@ -181,29 +179,6 @@ class UserLiveGames:
         if "error" in self.page_request:
             self.has_error = True
             self.error_message = f"{self.username}: Not valid username"
-
-    def check_has_games(self) -> None:
-
-        if len(self.all_replays) == 0:
-            self.has_error = True
-            self.error_message = f"{self.username}: No played games"
-
-    def get_first_last_date(self) -> None:
-
-        # Not using the min and max functions because min will pick up faulty jstris dates; taking first and last
-        # index is much less likely to fail, but compare to nearby indices to lower probability of false date
-        # even further
-
-        if jstrisfunctions.DateInit.str_to_datetime(self.all_replays[-1]['gtime']) < self.first_date_datetime:
-            self.all_replays.pop(-1)
-
-        list_of_dates = [jstrisfunctions.DateInit.str_to_datetime(i['gtime']) for i in self.all_replays]
-
-        results = jstrisfunctions.new_first_last_date(list_of_dates)
-
-        self.first_date_str = str(results[0])
-        self.last_date_str = str(results[1])
-        logging.info(f"Final min_time and max_time: {self.first_date_str}, {self.last_date_str}")
 
 # Returns all replay data of a username's specific gamemode
 # game: 1 = sprint, 3 = cheese, 4 = survival, 5 = ultra, 7 = 20TSD, 8 = PC Mode
@@ -262,7 +237,6 @@ class UserIndivGames:
             self.data_criteria_init()
             self.username_all_replay_stats()
             self.duplicate_replay_deleter()
-            self.check_has_games()
 
         if self.has_error:
             logging.warning(self.error_message)
@@ -409,11 +383,6 @@ class UserIndivGames:
                         current_dict["date (CET)"] = old_dict[i]
                 self.all_replays.append(current_dict)
 
-    def check_has_games(self) -> None:
-        if len(self.all_replays) == 0:
-            self.has_error = True
-            self.error_message = f"{self.username}: No played games"
-
     def check_username_exists(self) -> None:
         my_url = f"https://jstris.jezevec10.com/u/{self.username}"
         self.request_games(url=my_url)
@@ -467,6 +436,7 @@ class UserIndivGames:
         """
 
         logging.info(f"Getting url: {url}")
+        print(url)
         r = self.my_session.get(url)
         self.page_request = r.text
         self.edit_html_request()
@@ -565,7 +535,7 @@ class UserIndivGames:
     def duplicate_replay_deleter(self) -> None:
         """
 
-        :return: all_replays with duplicate replays deleted
+        :return: all_replays_ever with duplicate replays deleted
         """
 
         if len(self.all_replays) == 1:
@@ -591,9 +561,6 @@ if __name__ == "__main__":
     # stats.sort_stats(pstats.SortKey.TIME)
     # stats.print_stats()
 
-    # g = jstrisfunctions.DateInit(first='15 days', last='3 days')
-    #
-    # h = UserIndivGames(username='truebulge', game='3', mode='3', first_date=g.first, last_date=g.last)
 
     h = UserLiveGames(username='sio')
 

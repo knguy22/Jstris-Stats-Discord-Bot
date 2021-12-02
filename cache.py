@@ -23,24 +23,32 @@ class CacheInit:
         self.username = username
         self.params = params
 
-        self.str_key = ""
+        self.gamemode_key = ""
         self.fetched_user_class = []
         self.fetched_replays = []
         self.cached_replays = []
-        self.all_replays_ever = []
-        self.in_period_replays = []
+        self.fetched_and_cached_replays = []
+        self.returned_replays = []
 
         self.cached_date = ''
-        self.cached_dict = {}
+        self.user_dict = {}
 
         self.has_error = False
         self.error_message = ""
 
     async def fetch_all_games(self):
+
+        """
+
+        :return: self.returned_replays
+
+        All replays ever filtered out by period; all replays ever are stored into stats.json
+        """
+
         if isinstance(self.params, jstrisfunctions.DateInit):
-            self.str_key = 'vs'
+            self.gamemode_key = 'vs'
         elif isinstance(self.params, jstrisfunctions.IndivParameterInit):
-            self.str_key = await self.params_to_str_key(self.params)
+            self.gamemode_key = await self.params_to_str_key(self.params)
 
         # Versus
         if type(self.params) == jstrisfunctions.DateInit:
@@ -53,27 +61,29 @@ class CacheInit:
             last_date = '9999-01-01 00:00:00'
 
             self.fetched_user_class = await LOOP.run_in_executor(ThreadPoolExecutor(),
-                                                                 UserLiveGames, 100000000, first_date, last_date)
+                                                                 UserLiveGames, self.username, 1000000000,
+                                                                 first_date, last_date)
             self.fetched_replays = self.fetched_user_class.all_replays
-            await self.vs_stats_reducer()
-            self.all_replays_ever = self.cached_replays + self.fetched_replays
-            self.all_replays_ever = self.duplicate_replay_deleter(self.all_replays_ever)
+
+            await self.vs_reduce_fetched_stats()
+            self.fetched_and_cached_replays = self.cached_replays + self.fetched_replays
+            self.fetched_and_cached_replays = await self.duplicate_replay_deleter(self.fetched_and_cached_replays)
 
             if self.fetched_user_class.has_error:
                 self.has_error = True
                 self.error_message = self.fetched_user_class.error_message
-            if self.not_has_games(await self.all_replays_ever):
+            elif await self.not_has_games(self.fetched_and_cached_replays):
                 self.has_error = True
                 self.error_message = f"Error: {self.username} has no played games"
 
             if not self.has_error:
-                list_of_dates = [i['gtime'] for i in await self.all_replays_ever]
+                list_of_dates = [i['gtime'] for i in self.fetched_and_cached_replays]
                 final_date = jstrisfunctions.new_first_last_date(list_of_dates)[1]
 
-                self.cached_dict[self.username]['vs'] = {'date': final_date, 'replays': self.all_replays_ever}
-                self.append_file(self.cached_dict)
+                self.user_dict[self.username]['vs'] = {'date': final_date, 'replays': self.fetched_and_cached_replays}
+                self.append_file(self.user_dict)
 
-                self.in_period_replays = await self.vs_period_filter()
+                self.returned_replays = await self.vs_period_filter()
                 await self.vs_stats_producer()
 
         # Indiv gamemodes
@@ -90,46 +100,56 @@ class CacheInit:
                                                                  self.params.game, self.params.mode, first_date,
                                                                  last_date)
             self.fetched_replays = self.fetched_user_class.all_replays
-            await self.indiv_stats_reducer()
-            self.all_replays_ever = self.cached_replays + self.fetched_replays
-            self.all_replays_ever = await self.duplicate_replay_deleter(self.all_replays_ever)
+            await self.indiv_reduce_fetched_stats()
+            self.fetched_and_cached_replays = self.cached_replays + self.fetched_replays
+            self.fetched_and_cached_replays = await self.duplicate_replay_deleter(self.fetched_and_cached_replays)
 
             if self.fetched_user_class.has_error:
                 self.has_error = True
                 self.error_message = self.fetched_user_class.error_message
-            if await self.not_has_games(self.all_replays_ever):
+            elif await self.not_has_games(self.fetched_and_cached_replays):
                 self.has_error = True
                 self.error_message = f"Error: {self.username} has no played games"
 
             if not self.has_error:
-                list_of_dates = [i['date (CET)'] for i in self.all_replays_ever]
+                list_of_dates = [i['date (CET)'] for i in self.fetched_and_cached_replays]
                 final_date = max([jstrisfunctions.DateInit.str_to_datetime(i) for i in list_of_dates])
                 final_date = jstrishtml.datetime_to_str_naive(final_date)
 
-                self.cached_dict[self.username][await self.params_to_str_key(self.params)] = \
-                    {'date': final_date, 'replays': self.all_replays_ever}
-                self.append_file(self.cached_dict)
-                self.in_period_replays = await self.indiv_period_filter()
+                self.user_dict[self.username][await self.params_to_str_key(self.params)] = \
+                    {'date': final_date, 'replays': self.fetched_and_cached_replays}
+                self.append_file(self.user_dict)
+                self.returned_replays = await self.indiv_period_filter()
                 await self.indiv_stats_producer()
 
     def fetch_user(self):
+        """
+        Dictionary containing all gamemodes of user; date of last replay; all replays stored of specific gamemode
+
+        :return: self.user_dict, self.cached_date, self.cached_replays
+
+        """
         self.cached_date = ''
         self.cached_replays = []
-        self.cached_dict = {self.username: {self.str_key: {'date': '', 'replays': []}}}
+        self.user_dict = {self.username: {self.gamemode_key: {'date': '', 'replays': []}}}
 
         with open('stats.json', 'r') as f:
             for player in ijson.items(f, 'item'):
                 if self.username in player.keys():
-                    if self.str_key in player[self.username].keys():
-                        self.cached_date = self.replace_decimals(player[self.username][self.str_key])
+                    if self.gamemode_key in player[self.username].keys():
+                        self.cached_date = self.replace_decimals(player[self.username][self.gamemode_key])
                         self.cached_date = self.cached_date['date']
-                        self.cached_replays = self.replace_decimals(player[self.username][self.str_key])
+                        self.cached_replays = self.replace_decimals(player[self.username][self.gamemode_key])
                         self.cached_replays = self.cached_replays['replays']
-                    self.cached_dict = player
+                    self.user_dict = player
 
-    async def vs_stats_reducer(self):
+    async def vs_reduce_fetched_stats(self):
+        """
+
+        :return: self.fetched_replays: skim off unneeded stats to save memory
+        """
         reduced_all_stats = []
-        for i in self.fetched_user_class.all_stats:
+        for i in self.fetched_user_class.all_replays:
             i.pop('cid')
             i.pop('r1v1')
             i.pop('apm')
@@ -140,6 +160,12 @@ class CacheInit:
         self.fetched_replays = reduced_all_stats
 
     async def vs_period_filter(self):
+        """
+
+        :return: new_list_of_games
+
+        Filtered by first date and last date
+        """
         new_list_of_games = []
         games_below_first_date = []
         prev_date = jstrisfunctions.DateInit.str_to_datetime("9999-01-01 00:00:00")
@@ -147,7 +173,7 @@ class CacheInit:
         first_date = jstrisfunctions.DateInit.str_to_datetime(self.params.first)
         last_date = jstrisfunctions.DateInit.str_to_datetime(self.params.last)
 
-        for i, j in enumerate(self.all_replays_ever):
+        for i, j in enumerate(self.fetched_and_cached_replays):
             curr_date = jstrisfunctions.DateInit.str_to_datetime(j['gtime'])
             if curr_date > last_date:
                 pass
@@ -165,13 +191,24 @@ class CacheInit:
         return new_list_of_games
 
     async def vs_stats_producer(self):
-        for i, j in enumerate(self.in_period_replays):
+
+        """
+        Recalculate useful stats like apm, spm, pps
+
+        :return: self.returned_replays
+        """
+        for i, j in enumerate(self.returned_replays):
             j['apm'] = round(j['attack'] / j['gametime'] * 60, 2)
             j['spm'] = round(j['sent'] / j['gametime'] * 60, 2)
             j['pps'] = round(j['pcs'] / j['gametime'], 2)
-            self.in_period_replays[i] = j
+            self.returned_replays[i] = j
 
-    async def indiv_stats_reducer(self):
+    async def indiv_reduce_fetched_stats(self):
+        """
+        Reduces unnecessary statistics/attributes
+
+        :return: self.fetched_replays
+        """
         reduced_all_stats = []
         for i in self.fetched_replays:
             i.pop('username')
@@ -180,23 +217,39 @@ class CacheInit:
         self.fetched_replays = reduced_all_stats
 
     async def indiv_period_filter(self) -> list:
+        """
+        Filters games by first and last date
+
+        :return: self.fetched_and_cached_replays
+        """
         new_list_of_games = []
         first_date = jstrisfunctions.DateInit.str_to_datetime(self.params.first_date)
         last_date = jstrisfunctions.DateInit.str_to_datetime(self.params.last_date)
 
-        for i in self.all_replays_ever:
+        for i in self.fetched_and_cached_replays:
             if first_date < jstrisfunctions.DateInit.str_to_datetime(i['date (CET)']) < last_date:
                 new_list_of_games.append(i)
 
         return new_list_of_games
 
     async def indiv_stats_producer(self):
-        for i, j in enumerate(self.in_period_replays):
+        """
+        Re-adds username to each replay
+        :return: self.returned_replays
+        """
+        for i, j in enumerate(self.returned_replays):
             new_dict = {'username': self.username}
             new_dict.update(j)
-            self.in_period_replays[i] = new_dict
+            self.returned_replays[i] = new_dict
 
     def append_file(self, new_username_stats: dict) -> None:
+        """
+        Parses through old stats.json and appends all other users into new_stats.json.
+        Adds new_user at the end
+
+        :param new_username_stats: dictionary of modified user
+        :return: stats.json
+        """
 
         with open('stats.json', 'r') as f, open('new_stats.json', 'w') as g:
             g.write('[')
@@ -221,6 +274,13 @@ class CacheInit:
         os.rename("new_stats.json", 'stats.json')
 
     def replace_decimals(self, obj: dict):
+        """
+        Replaces objects with Decimal class with floats (this undoes ijson turning all floats into Decimal)
+
+        :param obj: nested dictionary/list
+        :return: obj:
+        """
+
         if isinstance(obj, list):
             for i in range(len(obj)):
                 obj[i] = self.replace_decimals(obj[i])
@@ -236,6 +296,12 @@ class CacheInit:
 
     @staticmethod
     async def params_to_str_key(params: jstrisfunctions.IndivParameterInit) -> str:
+        """
+        Assigns gamemode key based on params.game
+
+        :param params: IndivParameterInit
+        :return: str_search
+        """
         str_search = ""
         if params.game == '1':
             if params.mode == '1':
@@ -267,6 +333,13 @@ class CacheInit:
     @staticmethod
     async def duplicate_replay_deleter(my_list: list) -> list:
 
+        """
+        Deletes duplicate replays
+
+        :param my_list: list of replays
+        :return: new_list:
+        """
+
         frozen_set_list = []
         for i in my_list:
             frozen_set_list.append(frozenset(i.items()))
@@ -282,28 +355,57 @@ class CacheInit:
 
     @staticmethod
     async def not_has_games(my_list: list) -> bool:
+        """
+        Self explanatory
+
+        :param my_list: list of replays
+        :return:
+        """
         if len(my_list) > 0:
             return False
         return True
 
     def __repr__(self):
+        """
+        Debugging purposes
+
+        :return:
+        """
         return f'{self.error_message}'
 
 
+def check_stats_json_exists():
+    """
+    Creates stats.json if needed; cache init doesn't work if there isn't at least an empty list inside of the json
+
+    :return:
+    """
+    if not os.path.exists("stats.json"):
+        with open('stats.json', 'w') as f:
+            f.write('[]')
+
+
 if __name__ == "__main__":
+    async def foo(loop):
+        game_stats = CacheInit('sio', jstrisfunctions.DateInit('June 25, 2019', 'day'))
+        await game_stats.fetch_all_games()
+        dates = jstrisfunctions.opponents_matchups(game_stats.returned_replays)
+        print(dates)
+        dates = dates['reminder']
+        game_stats = CacheInit('reminder', jstrisfunctions.DateInit(dates['min_time'], dates['max_time']))
+        await game_stats.fetch_all_games()
+        loop.stop()
 
-    ggame_Stats = CacheInit('truebulge', jstrisfunctions.DateInit('June 25, 2021', 'day'))
+
+    local_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(local_loop)
+    LOOP = asyncio.get_event_loop()
+    asyncio.ensure_future(foo(local_loop))
+    local_loop.run_forever()
+
+
     # await ggame_Stats.fetch_all_games()
 
-    print(len(ggame_Stats.in_period_replays))
-    print(ggame_Stats.in_period_replays[1])
-
-    ggame_Stats = CacheInit('sio', jstrisfunctions.IndivParameterInit(('cheese', 'october 25, 2021', 'day')))
-    # await ggame_Stats.fetch_all_games()
-
-    print(ggame_Stats)
-    print(len(ggame_Stats.in_period_replays))
-    print(ggame_Stats.in_period_replays[1])
     # k = jstrisfunctions.DateInit('5 months', 'day')
     # j = jstrisuser.UserLiveGames('reminder', first_date=k.first, last_date=k.last)
     # print(j.first_date_str, j.last_date_str)

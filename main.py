@@ -6,7 +6,9 @@ import logging
 import jstrisfunctions
 from jstrisfunctions import DateInit
 from jstrisfunctions import IndivParameterInit
+
 from cache import CacheInit
+from cache import check_stats_json_exists
 
 
 intents = discord.Intents.default()
@@ -82,7 +84,7 @@ class IndivCommands(commands.Cog):
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
         else:
-            a = jstrisfunctions.least_(searched_games.in_period_replays, my_ps.param)
+            a = jstrisfunctions.least_(searched_games.returned_replays, my_ps.param)
             await IndivCommands.replay_send(ctx, a)
 
         logging.info("Finish least")
@@ -107,7 +109,7 @@ class IndivCommands(commands.Cog):
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
         else:
-            a = jstrisfunctions.most_(searched_games.in_period_replays, my_ps.param)
+            a = jstrisfunctions.most_(searched_games.returned_replays, my_ps.param)
             await IndivCommands.replay_send(ctx, a)
         logging.info("Finishing most")
 
@@ -129,7 +131,7 @@ class IndivCommands(commands.Cog):
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
         else:
-            my_average = jstrisfunctions.average_(searched_games.in_period_replays, my_ps.param)
+            my_average = jstrisfunctions.average_(searched_games.returned_replays, my_ps.param)
             await ctx.send(f"Average {my_ps.param} for {username} is: {my_average}")
         logging.info("Finishing average")
 
@@ -151,7 +153,7 @@ class IndivCommands(commands.Cog):
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
         else:
-            a = len(searched_games.in_period_replays)
+            a = len(searched_games.returned_replays)
             await ctx.send(f"{str(a)} games")
         logging.info("Finishing numgames")
 
@@ -181,7 +183,7 @@ class IndivCommands(commands.Cog):
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
         else:
-            a = jstrisfunctions.subblocks(searched_games.in_period_replays, int(blocks))
+            a = jstrisfunctions.subblocks(searched_games.returned_replays, int(blocks))
             await ctx.send(ctx.author.mention)
             await ctx.send(f"{username} has {a} sub {blocks}s")
         logging.info("Finishing subblocks")
@@ -211,7 +213,8 @@ class VsCommands(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def vs(self, ctx, username: str, offset: int = 10, first_date: str = "1000 months", last_date: str = "0 days"):
+    async def vs(self, ctx, username: str, offset: int = 10,
+                 first_date: str = "1000 months", last_date: str = "0 days"):
         logging.info("Beginning vs")
         if not await GeneralMaintenance.num_processes_init(ctx):
             return None
@@ -232,17 +235,18 @@ class VsCommands(commands.Cog):
             return None
 
         # Calculates averages
-        apm_avg = jstrisfunctions.live_games_avg(searched_games.in_period_replays, offset, 'apm')
-        spm_avg = jstrisfunctions.live_games_avg(searched_games.in_period_replays, offset, 'spm')
-        pps_avg = jstrisfunctions.live_games_avg(searched_games.in_period_replays, offset, 'pps')
-        weight_apm = round(jstrisfunctions.live_games_weighted_avg(searched_games.in_period_replays, offset, 'attack') * 60,
-                           2)
-        weight_spm = round(jstrisfunctions.live_games_weighted_avg(searched_games.in_period_replays, offset, 'sent') * 60, 2)
-        weight_pps = round(jstrisfunctions.live_games_weighted_avg(searched_games.in_period_replays, offset, 'pcs'), 2)
-        time_avg = jstrisfunctions.live_games_avg(searched_games.in_period_replays, offset, 'gametime')
-        players_avg = jstrisfunctions.live_games_avg(searched_games.in_period_replays, offset, 'players')
-        pos_avg = jstrisfunctions.live_games_avg(searched_games.in_period_replays, offset, 'pos')
-        won_games = jstrisfunctions.games_won(searched_games.in_period_replays, offset)
+        apm_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, offset, 'apm')
+        spm_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, offset, 'spm')
+        pps_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, offset, 'pps')
+        weight_apm = round(jstrisfunctions.live_games_weighted_avg(searched_games.returned_replays, offset, 'attack')
+                           * 60, 2)
+        weight_spm = round(jstrisfunctions.live_games_weighted_avg(searched_games.returned_replays, offset, 'sent')
+                           * 60, 2)
+        weight_pps = round(jstrisfunctions.live_games_weighted_avg(searched_games.returned_replays, offset, 'pcs'), 2)
+        time_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, offset, 'gametime')
+        players_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, offset, 'players')
+        pos_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, offset, 'pos')
+        won_games = jstrisfunctions.games_won(searched_games.returned_replays, offset)
 
         # Discord formatting
         embed = await embed_init(username)
@@ -256,9 +260,9 @@ class VsCommands(commands.Cog):
         embed.add_field(name="**final position:**", value=str(pos_avg), inline=True)
         embed.add_field(name="**players:**", value=str(players_avg), inline=True)
         embed.add_field(name="**games won:**", value=f"{won_games}  "
-                                                     f"({won_games / len(searched_games.in_period_replays) * 100:.2f}%)",
+                                                     f"({won_games / len(searched_games.returned_replays) * 100:.2f}%)",
                         inline=False)
-        embed.add_field(name="**number of games:**", value=str(len(searched_games.in_period_replays)), inline=False)
+        embed.add_field(name="**number of games:**", value=str(len(searched_games.returned_replays)), inline=False)
         embed.set_footer(text='All of these values are averages. Weighted means weighted by time, not game.')
         await ctx.send(ctx.author.mention)
         await ctx.send(embed=embed)
@@ -285,7 +289,7 @@ class VsCommands(commands.Cog):
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
             return None
-        list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.in_period_replays)
+        list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.returned_replays)
 
         # Discord formatting stuff
 
@@ -338,25 +342,24 @@ class VsCommands(commands.Cog):
         await searched_games.fetch_all_games()
 
         if searched_games.has_error:
+            await init_message.delete()
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
             return None
-        list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.in_period_replays)
+        list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.returned_replays)
         embed1 = await VsCommands.vs_matchup_embed(ctx, username, opponent, list_of_opponents)
 
         # Opponent's games
         logging.info(f"Beginning {opponent}, first: {list_of_opponents[opponent]['min_time']}, "
                      f"last: {list_of_opponents[opponent]['max_time']}")
-        date_init.first = list_of_opponents[opponent]["min_time"]
-        date_init.last = list_of_opponents[opponent]["max_time"]
-        searched_games = CacheInit(username, date_init)
+        searched_games = CacheInit(opponent, date_init)
         await searched_games.fetch_all_games()
 
         if searched_games.has_error:
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
             return None
-        list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.in_period_replays)
+        list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.returned_replays)
         embed2 = await VsCommands.vs_matchup_embed(ctx, opponent, username, list_of_opponents)
 
         # Finalizing
@@ -395,7 +398,7 @@ class VsCommands(commands.Cog):
     #         await ctx.send(searched_games.error_message)
     #         return None
     #
-    #     all_games = searched_games.all_replays_ever
+    #     all_games = searched_games.fetched_and_cached_replays
     #     list_of_times = [datetime.datetime.strptime(game['gtime'], "%Y-%m-%d %H:%M:%S") for game in all_games]
     #     list_of_apms = [game['apm'] for game in all_games]
     #     list_of_sizes = [5 for game in list_of_times]
@@ -462,6 +465,8 @@ async def embed_init(username: str) -> discord.Embed:
 
 
 if __name__ == "__main__":
+
+    check_stats_json_exists()
 
     # Token
     BadgerBot.add_cog(GeneralMaintenance(BadgerBot))

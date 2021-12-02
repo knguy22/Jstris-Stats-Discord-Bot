@@ -226,6 +226,8 @@ class VsCommands(commands.Cog):
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
         searched_games = CacheInit(username, date_init)
+        await searched_games.fetch_all_games()
+        searched_games.returned_replays = searched_games.returned_replays[:offset]
 
         await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
@@ -345,6 +347,7 @@ class VsCommands(commands.Cog):
             await init_message.delete()
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
+            await GeneralMaintenance.num_processes_finish()
             return None
         list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.returned_replays)
         embed1 = await VsCommands.vs_matchup_embed(ctx, username, opponent, list_of_opponents)
@@ -358,6 +361,7 @@ class VsCommands(commands.Cog):
         if searched_games.has_error:
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
+            await GeneralMaintenance.num_processes_finish()
             return None
         list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.returned_replays)
         embed2 = await VsCommands.vs_matchup_embed(ctx, opponent, username, list_of_opponents)
@@ -441,6 +445,7 @@ class VsCommands(commands.Cog):
             has_opponent = False
 
         if not has_opponent:
+            await GeneralMaintenance.num_processes_finish()
             await ctx.send(ctx.author.mention)
             await ctx.send(f"No found games of {username} vs {opponent}.")
             return None

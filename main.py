@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 import logging
 
@@ -7,9 +7,8 @@ import jstrisfunctions
 from jstrisfunctions import DateInit
 from jstrisfunctions import IndivParameterInit
 
+import cache
 from cache import CacheInit
-from cache import check_stats_json_exists
-
 
 intents = discord.Intents.default()
 intents.members = True
@@ -469,9 +468,16 @@ async def embed_init(username: str) -> discord.Embed:
     return embed
 
 
+@tasks.loop(seconds=5)
+async def clear_unaccessed_replays():
+    logging.info('pruning start')
+    cache.prune_unused_stats()
+    logging.info('pruning done')
+
 if __name__ == "__main__":
 
-    check_stats_json_exists()
+    cache.check_stats_json_exists()
+    clear_unaccessed_replays.start()
 
     # Token
     BadgerBot.add_cog(GeneralMaintenance(BadgerBot))
@@ -482,7 +488,4 @@ if __name__ == "__main__":
 
 # To do list
 # indiv stats for apm and such
-# Complete the cache
-
-# finish filter
-# finish pruning stats for storage and readding stats for presentation
+# Implement date accessed; delete by date accessed by setting up task

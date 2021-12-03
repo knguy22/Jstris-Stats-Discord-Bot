@@ -6,6 +6,9 @@ from collections import OrderedDict
 import ijson
 import json
 
+import datetime
+import pytz
+
 import jstrisfunctions
 import jstrishtml
 from jstrisuser import UserLiveGames
@@ -52,75 +55,86 @@ class CacheInit:
 
         # Versus
         if type(self.params) == jstrisfunctions.DateInit:
-            self.fetch_user()
-
-            if not self.cached_date:
-                first_date = '0001-01-01 00:00:01'
-            else:
-                first_date = self.cached_date
-            last_date = '9999-01-01 00:00:00'
-
-            self.fetched_user_class = await LOOP.run_in_executor(ThreadPoolExecutor(),
-                                                                 UserLiveGames, self.username, 1000000000,
-                                                                 first_date, last_date)
-            self.fetched_replays = self.fetched_user_class.all_replays
-
-            await self.vs_reduce_fetched_stats()
-            self.fetched_and_cached_replays = self.cached_replays + self.fetched_replays
-            self.fetched_and_cached_replays = await self.duplicate_replay_deleter(self.fetched_and_cached_replays)
-
-            if self.fetched_user_class.has_error:
-                self.has_error = True
-                self.error_message = self.fetched_user_class.error_message
-            elif await self.not_has_games(self.fetched_and_cached_replays):
-                self.has_error = True
-                self.error_message = f"Error: {self.username} has no played games"
-
-            if not self.has_error:
-                list_of_dates = [i['gtime'] for i in self.fetched_and_cached_replays]
-                final_date = jstrisfunctions.new_first_last_date(list_of_dates)[1]
-
-                self.user_dict[self.username]['vs'] = {'date': final_date, 'replays': self.fetched_and_cached_replays}
-                self.append_file(self.user_dict)
-
-                self.returned_replays = await self.vs_period_filter()
-                await self.vs_stats_producer()
+            await self.fetch_versus()
 
         # Indiv gamemodes
         elif type(self.params) == jstrisfunctions.IndivParameterInit:
+            await self.fetch_indiv()
 
-            self.fetch_user()
-            if not self.cached_date:
-                first_date = '0001-01-01 00:00:01'
-            else:
-                first_date = self.cached_date
-            last_date = '9999-01-01 00:00:00'
+    async def fetch_versus(self):
+        self.fetch_user()
 
-            self.fetched_user_class = await LOOP.run_in_executor(ThreadPoolExecutor(), UserIndivGames, self.username,
-                                                                 self.params.game, self.params.mode, first_date,
-                                                                 last_date)
-            self.fetched_replays = self.fetched_user_class.all_replays
-            await self.indiv_reduce_fetched_stats()
-            self.fetched_and_cached_replays = self.cached_replays + self.fetched_replays
-            self.fetched_and_cached_replays = await self.duplicate_replay_deleter(self.fetched_and_cached_replays)
+        if not self.cached_date:
+            first_date = '0001-01-01 00:00:01'
+        else:
+            first_date = self.cached_date
+        last_date = '9999-01-01 00:00:00'
 
-            if self.fetched_user_class.has_error:
-                self.has_error = True
-                self.error_message = self.fetched_user_class.error_message
-            elif await self.not_has_games(self.fetched_and_cached_replays):
-                self.has_error = True
-                self.error_message = f"Error: {self.username} has no played games"
+        self.fetched_user_class = await LOOP.run_in_executor(ThreadPoolExecutor(),
+                                                             UserLiveGames, self.username, 1000000000,
+                                                             first_date, last_date)
+        self.fetched_replays = self.fetched_user_class.all_replays
 
-            if not self.has_error:
-                list_of_dates = [i['date (CET)'] for i in self.fetched_and_cached_replays]
-                final_date = max([jstrisfunctions.DateInit.str_to_datetime(i) for i in list_of_dates])
-                final_date = jstrishtml.datetime_to_str_naive(final_date)
+        await self.vs_reduce_fetched_stats()
+        self.fetched_and_cached_replays = self.cached_replays + self.fetched_replays
+        self.fetched_and_cached_replays = await self.duplicate_replay_deleter(self.fetched_and_cached_replays)
 
-                self.user_dict[self.username][await self.params_to_str_key(self.params)] = \
-                    {'date': final_date, 'replays': self.fetched_and_cached_replays}
-                self.append_file(self.user_dict)
-                self.returned_replays = await self.indiv_period_filter()
-                await self.indiv_stats_producer()
+        if self.fetched_user_class.has_error:
+            self.has_error = True
+            self.error_message = self.fetched_user_class.error_message
+        elif await self.not_has_games(self.fetched_and_cached_replays):
+            self.has_error = True
+            self.error_message = f"Error: {self.username} has no played games"
+
+        if not self.has_error:
+            list_of_dates = [i['gtime'] for i in self.fetched_and_cached_replays]
+            for i, j in enumerate(list_of_dates):
+                if j is None:
+                    print(i, self.fetched_and_cached_replays[i])
+            final_date = jstrisfunctions.new_first_last_date(list_of_dates)[1]
+
+            self.user_dict[self.username]['vs'] = {'date': final_date, 'replays': self.fetched_and_cached_replays,
+                                                   'date accessed': jstrishtml.datetime_to_str_naive(
+                                                       datetime.datetime.now(tz=pytz.timezone('CET')))[:-7]}
+            self.append_file(self.user_dict)
+
+            self.returned_replays = await self.vs_period_filter()
+            await self.vs_stats_producer()
+
+    async def fetch_indiv(self):
+        self.fetch_user()
+        if not self.cached_date:
+            first_date = '0001-01-01 00:00:01'
+        else:
+            first_date = self.cached_date
+        last_date = '9999-01-01 00:00:00'
+
+        self.fetched_user_class = await LOOP.run_in_executor(ThreadPoolExecutor(), UserIndivGames, self.username,
+                                                             self.params.game, self.params.mode, first_date,
+                                                             last_date)
+        self.fetched_replays = self.fetched_user_class.all_replays
+        await self.indiv_reduce_fetched_stats()
+        self.fetched_and_cached_replays = self.cached_replays + self.fetched_replays
+        self.fetched_and_cached_replays = await self.duplicate_replay_deleter(self.fetched_and_cached_replays)
+
+        if self.fetched_user_class.has_error:
+            self.has_error = True
+            self.error_message = self.fetched_user_class.error_message
+        elif await self.not_has_games(self.fetched_and_cached_replays):
+            self.has_error = True
+            self.error_message = f"Error: {self.username} has no played games"
+
+        if not self.has_error:
+            list_of_dates = [i['date (CET)'] for i in self.fetched_and_cached_replays]
+            final_date = max([jstrisfunctions.DateInit.str_to_datetime(i) for i in list_of_dates])
+            final_date = jstrishtml.datetime_to_str_naive(final_date)
+
+            self.user_dict[self.username][await self.params_to_str_key(self.params)] = \
+                {'date': final_date, 'replays': self.fetched_and_cached_replays,
+                 'date accessed': jstrishtml.datetime_to_str_naive(datetime.datetime.now(tz=pytz.timezone('CET')))[:-7]}
+            self.append_file(self.user_dict)
+            self.returned_replays = await self.indiv_period_filter()
+            await self.indiv_stats_producer()
 
     def fetch_user(self):
         """
@@ -259,7 +273,7 @@ class CacheInit:
                         continue
 
                     float_player = self.replace_decimals(player)
-                    json.dump(float_player, g)
+                    json.dump(float_player, g, indent=1)
                     g.write(',')
 
             except ijson.common.IncompleteJSONError:
@@ -267,13 +281,14 @@ class CacheInit:
 
         with open("new_stats.json", "a") as g:
             float_new_username_stats = self.replace_decimals(new_username_stats)
-            json.dump(float_new_username_stats, g)
+            json.dump(float_new_username_stats, g, indent=1)
             g.write(']')
 
         os.remove('stats.json')
         os.rename("new_stats.json", 'stats.json')
 
-    def replace_decimals(self, obj: dict):
+    @staticmethod
+    def replace_decimals(obj: dict):
         """
         Replaces objects with Decimal class with floats (this undoes ijson turning all floats into Decimal)
 
@@ -283,11 +298,11 @@ class CacheInit:
 
         if isinstance(obj, list):
             for i in range(len(obj)):
-                obj[i] = self.replace_decimals(obj[i])
+                obj[i] = CacheInit.replace_decimals(obj[i])
             return obj
         elif isinstance(obj, dict):
             for k in obj.keys():
-                obj[k] = self.replace_decimals(obj[k])
+                obj[k] = CacheInit.replace_decimals(obj[k])
             return obj
         elif isinstance(obj, decimal.Decimal) or isinstance(obj, Decimal):
             return float(obj)
@@ -385,24 +400,66 @@ def check_stats_json_exists():
             f.write('[]')
 
 
+def prune_unused_stats():
+    """
+    Deletes lists of replays who have been last accessed two weeks ago
+    :return:
+    """
+    try:
+        with open('stats.json', 'r') as f, open('new_stats.json', 'w') as g:
+            g.write('[')
+            for item in ijson.items(f, 'item'):
+                for username in item:
+                    username_dict = {username: {}}
+                    for gamemode in item[username]:
+                        for attribute in item[username][gamemode]:
+                            if attribute == 'date accessed':
+                                if datetime.datetime.now(tz=pytz.timezone('CET'))\
+                                        - jstrisfunctions.DateInit.str_to_datetime(item[username][gamemode][attribute]
+                                                                                   ) < datetime.timedelta(days=14):
+                                    username_dict[username][gamemode] = item[username][gamemode]
+
+                    if username_dict[username]:
+                        float_gamemode = CacheInit.replace_decimals(username_dict)
+                        json.dump(float_gamemode, g, indent=1)
+                        g.write(',')
+        with open('new_stats.json', 'rb+') as f:
+            f.seek(-1, os.SEEK_END)
+            f.truncate()
+        with open('new_stats.json', 'a') as f:
+            f.write(']')
+
+    except ijson.common.IncompleteJSONError:
+        print('Empty stats.json file')
+
+    os.remove('stats.json')
+    os.rename("new_stats.json", 'stats.json')
+
+
 if __name__ == "__main__":
-    async def foo(loop):
-        game_stats = CacheInit('sio', jstrisfunctions.DateInit('June 25, 2019', 'day'))
-        await game_stats.fetch_all_games()
-        dates = jstrisfunctions.opponents_matchups(game_stats.returned_replays)
-        print(dates)
-        dates = dates['reminder']
-        game_stats = CacheInit('reminder', jstrisfunctions.DateInit(dates['min_time'], dates['max_time']))
-        await game_stats.fetch_all_games()
-        loop.stop()
+    # async def foo(loop):
+    #     game_stats = CacheInit('sio', jstrisfunctions.DateInit('June 25, 2019', 'day'))
+    #     await game_stats.fetch_all_games()
+    #
+    #     dates = jstrisfunctions.opponents_matchups(game_stats.returned_replays)
+    #     dates = dates['reminder']
+    #     game_stats = CacheInit('reminder', jstrisfunctions.DateInit(dates['min_time'], dates['max_time']))
+    #     await game_stats.fetch_all_games()
+    #
+    #     game_stats = CacheInit('truebulge', jstrisfunctions.IndivParameterInit(('cheese', 'day')))
+    #     await game_stats.fetch_all_games()
+    #     print(game_stats.returned_replays)
+    #
+    #     loop.stop()
+    #
+    #
+    # local_loop = asyncio.new_event_loop()
+    # asyncio.set_event_loop(local_loop)
+    # LOOP = asyncio.get_event_loop()
+    # asyncio.ensure_future(foo(local_loop))
+    # local_loop.run_forever()
 
-
-    local_loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(local_loop)
-    LOOP = asyncio.get_event_loop()
-    asyncio.ensure_future(foo(local_loop))
-    local_loop.run_forever()
-
+    prune_unused_stats()
 
     # await ggame_Stats.fetch_all_games()
 

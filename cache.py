@@ -15,9 +15,11 @@ from jstrisuser import UserLiveGames
 from jstrisuser import UserIndivGames
 import os
 
+import logging
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
+logger = logging.getLogger(__name__)
 LOOP = asyncio.get_event_loop()
 
 
@@ -48,13 +50,16 @@ class CacheInit:
         All replays ever filtered out by period; all replays ever are stored into stats.json
         """
 
-        if isinstance(self.params, jstrisfunctions.DateInit):
+        if isinstance(self.params, jstrisfunctions.VersusParameterInit):
             self.gamemode_key = 'vs'
         elif isinstance(self.params, jstrisfunctions.IndivParameterInit):
             self.gamemode_key = await self.params_to_str_key(self.params)
 
+        logging.info(self.params)
+        logging.info(self.gamemode_key)
+
         # Versus
-        if type(self.params) == jstrisfunctions.DateInit:
+        if type(self.params) == jstrisfunctions.VersusParameterInit:
             await self.fetch_versus()
 
         # Indiv gamemodes
@@ -71,7 +76,7 @@ class CacheInit:
         last_date = '9999-01-01 00:00:00'
 
         self.fetched_user_class = await LOOP.run_in_executor(ThreadPoolExecutor(),
-                                                             UserLiveGames, self.username, 1000000000,
+                                                             UserLiveGames, self.username, 100000000000,
                                                              first_date, last_date)
         self.fetched_replays = self.fetched_user_class.all_replays
 
@@ -184,8 +189,8 @@ class CacheInit:
         games_below_first_date = []
         prev_date = jstrisfunctions.DateInit.str_to_datetime("9999-01-01 00:00:00")
 
-        first_date = jstrisfunctions.DateInit.str_to_datetime(self.params.first)
-        last_date = jstrisfunctions.DateInit.str_to_datetime(self.params.last)
+        first_date = jstrisfunctions.DateInit.str_to_datetime(self.params.first_date)
+        last_date = jstrisfunctions.DateInit.str_to_datetime(self.params.last_date)
 
         for i, j in enumerate(self.fetched_and_cached_replays):
             curr_date = jstrisfunctions.DateInit.str_to_datetime(j['gtime'])
@@ -405,6 +410,7 @@ def prune_unused_stats():
     Deletes lists of replays who have been last accessed two weeks ago
     :return:
     """
+    logging.info('Beginning pruning')
     try:
         with open('stats.json', 'r') as f, open('new_stats.json', 'w') as g:
             g.write('[')
@@ -413,6 +419,8 @@ def prune_unused_stats():
                     username_dict = {username: {}}
                     for gamemode in item[username]:
                         for attribute in item[username][gamemode]:
+                            # Filters all gamemodes if "date accessed" is less than 14 days
+
                             if attribute == 'date accessed':
                                 if datetime.datetime.now(tz=pytz.timezone('CET'))\
                                         - jstrisfunctions.DateInit.str_to_datetime(item[username][gamemode][attribute]
@@ -420,17 +428,29 @@ def prune_unused_stats():
                                     username_dict[username][gamemode] = item[username][gamemode]
 
                     if username_dict[username]:
+                        logging.info(f"Trying to dump: {username}")
                         float_gamemode = CacheInit.replace_decimals(username_dict)
                         json.dump(float_gamemode, g, indent=1)
                         g.write(',')
-        with open('new_stats.json', 'rb+') as f:
-            f.seek(-1, os.SEEK_END)
-            f.truncate()
-        with open('new_stats.json', 'a') as f:
-            f.write(']')
 
-    except ijson.common.IncompleteJSONError:
-        print('Empty stats.json file')
+        # Handles end brackets to maintain complete json formatting; deletes extra comma as well to preserve json
+
+        with open('new_stats.json', 'rb+') as g:
+            g.seek(-1, os.SEEK_END)
+            curr_var = g.read()
+            if curr_var == b",":
+                g.seek(-1, os.SEEK_END)
+                g.truncate()
+        with open('new_stats.json', 'a') as g:
+            g.write(']')
+
+    except Exception as e:
+        logging.warning('Pruning failed')
+        logging.warning(e)
+
+        # # Creates new cache file just in case; will erase all data though
+        # with open('new_stats.json', 'w') as f:
+        #     f.write('[]')
 
     os.remove('stats.json')
     os.rename("new_stats.json", 'stats.json')

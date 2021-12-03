@@ -182,8 +182,8 @@ class IndivParameterInit:
         self.game = ""
         self.mode = ""
         self.param = ""
-        self.first_date = None
-        self.last_date = None
+        self.first_date = ""
+        self.last_date = ""
 
         logging.info(f"IndivParameterInit inputs: {my_tuple}")
 
@@ -212,7 +212,7 @@ class IndivParameterInit:
             break
 
         # sets only self.first
-        if self.first_date is None and self.last_date is None:
+        if not self.first_date and not self.last_date:
             for i in my_tuple:
                 potential_first_date = DateInit(first=i, last=i)
                 if not potential_first_date.has_error:
@@ -292,13 +292,58 @@ class IndivParameterInit:
             else:
                 self.param = "time"
 
-        if self.first_date is None and self.last_date is None:
+        if not self.first_date and not self.last_date:
             self.first_date = "0001-01-01 00:00:00"
             self.last_date = "9999-01-01 00:00:00"
 
     def __repr__(self) -> str:
         return f"IndivParameterInit({self.gamemode}, {self.game}, {self.mode}, {self.param}," \
                f" {self.first_date}, {self.last_date})"
+
+
+class VersusParameterInit:
+    def __init__(self, my_tuple: tuple) -> None:
+        self.first_date = ""
+        self.last_date = ""
+        self.offset = 1000000000
+
+        logging.info(f"VersusParameterInit inputs: {my_tuple}")
+
+        # sets both self.first and self.last
+        for i, j in enumerate(my_tuple):
+            for k, l in enumerate(my_tuple):
+                if i == k:
+                    continue
+                potential_dates = DateInit(first=j, last=l)
+                if not potential_dates.has_error:
+                    self.first_date = potential_dates.first
+                    self.last_date = potential_dates.last
+                    break
+            else:
+                continue
+            break
+
+        # sets only self.first
+        if not self.first_date and not self.last_date:
+            for i in my_tuple:
+                potential_first_date = DateInit(first=i, last=i)
+                if not potential_first_date.has_error:
+                    self.first_date = potential_first_date.first
+                    self.last_date = "9999-01-01 00:00:00"
+                    break
+
+        # sets defaults
+        if not self.first_date and not self.last_date:
+            self.first_date = "0001-01-01 00:00:00"
+            self.last_date = "9999-01-01 00:00:00"
+
+        # sets offset
+        for i in my_tuple:
+            if i.isdigit():
+                self.offset = int(i)
+
+    def __repr__(self):
+        return f"VersusParameterInit ({self.first_date}, {self.last_date}, {self.offset})"
 
 
 def subblocks(listofruns: list, blocks: int) -> int:
@@ -577,13 +622,13 @@ if __name__ == "__main__":
     # second_date = 'september 2020'
     # h = DateInit(first_date, second_date)
     # print(h)
-    g = IndivParameterInit(('cheese', 'july 12, 2020', 'august 2021'))
+    g = IndivParameterInit(('cheese', '', ''))
     print(g)
 
-    first = ''
+    first = 'may 5'
     second = '2021-10-05 01:23:56'
 
-    print(DateInit(first, second))
+    print(VersusParameterInit(('' , "51")))
     # test_list_of_games = [{"id":115200078, "gid": "2LVYPT", "cid":51591546, "gametime":17.65, "sent":4, "attack":4, "pcs":27, "players":5, "r1v1":0, "pos":5, "vs": "luliz", "gtime": "2021-01-01 21:36:18"}, {"id":115200028, "gid": "1K4SHL", "cid":51591546, "gametime":83.79, "sent":54, "attack":68, "pcs":151, "players":5, "r1v1":0, "pos":1, "vs": "luliz", "gtime": "2021-01-01 21:35:17"}, {"id":115199760, "gid": "3P64B8", "cid":51591546, "gametime":73.11, "sent":67, "attack":71, "pcs":126, "players":5, "r1v1":0, "pos":1, "vs": "luliz", "gtime": "2021-01-01 21:33:47"}, {"id":115199566, "gid": "ISRNU8", "cid":51591546, "gametime":43.08, "sent":38, "attack":45, "pcs":73, "players":6, "r1v1":0, "pos":2, "vs": "luliz", "gtime": "2021-01-01 21:32:30"}, {"id":115199436, "gid": "8ZQKGM", "cid":51591546, "gametime":99.14, "sent":46, "attack":68, "pcs":124, "players":7, "r1v1":0, "pos":2, "vs": "luliz", "gtime": "2021-01-01 21:31:43"}, {"id":115199169, "gid": "SM8C3X", "cid":51591546, "gametime":56.92, "sent":51, "attack":60, "pcs":88, "players":6, "r1v1":0, "pos":2, "vs": "luliz", "gtime": "2021-01-01 21:30:01"}, {"id":115199008, "gid": "5YQFX9", "cid":51591546, "gametime":112.67, "sent":95, "attack":100, "pcs":180, "players":6, "r1v1":0, "pos":1, "vs": "luliz", "gtime": "2021-01-01 21:29:00"}, {"id":115198662, "gid": "XSK8D6", "cid":51591546, "gametime":137.79, "sent":77, "attack":96, "pcs":246, "players":6, "r1v1":0, "pos":2, "vs": "luliz", "gtime": "2021-01-01 21:27:02"}, {"id":115198216, "gid": "OMX074", "cid":51591546, "gametime":32.33, "sent":13, "attack":15, "pcs":40, "players":6, "r1v1":0, "pos":4, "vs": "luliz", "gtime": "2021-01-01 21:24:40"}, {"id":115180467, "gid": "HTR8QI", "cid":51583434, "gametime":54.3, "sent":37, "attack":51, "pcs":83, "players":3, "r1v1":0, "pos":2, "vs": "chickennuggetsz", "gtime": "2021-01-01 19:37:28"}, {"id":115180306, "gid": "OURBDL", "cid":51583434, "gametime":71.78, "sent":45, "attack":62, "pcs":123, "players":3, "r1v1":0, "pos":1, "vs": "chickennuggetsz", "gtime": "2021-01-01 19:36:29"}, {"id":115180130, "gid": "ANHS7R", "cid":51583434, "gametime":28.3, "sent":19, "attack":24, "pcs":55, "players":3, "r1v1":0, "pos":1, "vs": "chickennuggetsz", "gtime": "2021-01-01 19:35:14"}, {"id":115180036, "gid": "ARY5B1", "cid":51583434, "gametime":49.13, "sent":31, "attack":37, "pcs":90, "players":3, "r1v1":0, "pos":3, "vs": "chickennuggetsz", "gtime": "2021-01-01 19:34:42"}, {"id":115179874, "gid": "H9EOVT", "cid":51583434, "gametime":27.9, "sent":23, "attack":23, "pcs":49, "players":3, "r1v1":0, "pos":1, "vs": "chickennuggetsz", "gtime": "2021-01-01 19:33:47"}, {"id":115179792, "gid": "EKUFS6", "cid":51583434, "gametime":76.01, "sent":69, "attack":88, "pcs":138, "players":2, "r1v1":0, "pos":1, "vs": "chickennuggetsz", "gtime": "2021-01-01 19:33:12"}, {"id":115179564, "gid": "CXLQAK", "cid":51583434, "gametime":27.29, "sent":0, "attack":30, "pcs":42, "players":1, "r1v1":0, "pos":1, "gtime": "2021-01-01 19:31:53"}, {"id":115179438, "gid": "2OVKMC", "cid":51583434, "gametime":85.72, "sent":73, "attack":98, "pcs":165, "players":3, "r1v1":0, "pos":1, "vs": "Exyph", "gtime": "2021-01-01 19:31:08"}, {"id":115179221, "gid": "9WMENH", "cid":51583434, "gametime":98.18, "sent":67, "attack":83, "pcs":169, "players":4, "r1v1":0, "pos":1, "vs": "Exyph", "gtime": "2021-01-01 19:29:37"}, {"id":115178905, "gid": "B3LL1D", "cid":51583434, "gametime":101.9, "sent":61, "attack":65, "pcs":155, "players":4, "r1v1":0, "pos":3, "vs": "Exyph", "gtime": "2021-01-01 19:27:54"}, {"id":115172057, "gid": "X4KIKH", "cid":51580399, "gametime":178.44, "sent":152, "attack":170, "pcs":285, "players":36, "r1v1":0, "pos":2, "vs": "Pentioom78", "gtime": "2021-01-01 18:46:09"}, {"id":115171531, "gid": "Q69IR7", "cid":51580399, "gametime":176.19, "sent":113, "attack":132, "pcs":299, "players":37, "r1v1":0, "pos":9, "vs": "goscinny", "gtime": "2021-01-01 18:43:05"}, {"id":115037378, "gid": "KY59H5", "cid":51533415, "gametime":95.77, "sent":65, "attack":85, "pcs":179, "players":3, "r1v1":0, "pos":2, "vs": "ApplePie60", "gtime": "2021-01-01 05:55:51"}, {"id":115036988, "gid": "LD754F", "cid":51533415, "gametime":72.8, "sent":47, "attack":57, "pcs":115, "players":3, "r1v1":0, "pos":2, "vs": "K_3_V_R_A_L", "gtime": "2021-01-01 05:54:10"}, {"id":115036616, "gid": "IMYOXR", "cid":51533415, "gametime":28.52, "sent":22, "attack":23, "pcs":36, "players":4, "r1v1":0, "pos":4, "vs": "ApplePie60", "gtime": "2021-01-01 05:52:53"}, {"id":115015764, "gid": "6DSGDC", "cid":51524543, "gametime":20.2, "sent":2, "attack":2, "pcs":30, "players":6, "r1v1":0, "pos":5, "vs": "lagne", "gtime": "2020-08-25 13:29:56"}, {"id":114972730, "gid": "GSA4TA", "cid":51503692, "gametime":41.99, "sent":22, "attack":31, "pcs":85, "players":2, "r1v1":0, "pos":2, "vs": "akatsuki16", "gtime": "2021-01-01 00:17:13"}, {"id":114972589, "gid": "MWVG4F", "cid":51503692, "gametime":113.18, "sent":93, "attack":122, "pcs":224, "players":2, "r1v1":0, "pos":2, "vs": "akatsuki16", "gtime": "2021-01-01 00:16:22"}, {"id":114972270, "gid": "NMN0UH", "cid":51503692, "gametime":109.13, "sent":82, "attack":105, "pcs":207, "players":2, "r1v1":0, "pos":2, "vs": "akatsuki16", "gtime": "2021-01-01 00:14:15"}, {"id":114971922, "gid": "K0ZKOA", "cid":51503692, "gametime":50.31, "sent":47, "attack":47, "pcs":85, "players":2, "r1v1":0, "pos":1, "vs": "akatsuki16", "gtime": "2021-01-01 00:12:17"}, {"id":114971765, "gid": "5T3WYD", "cid":51503692, "gametime":70.34, "sent":65, "attack":94, "pcs":132, "players":2, "r1v1":0, "pos":2, "vs": "akatsuki16", "gtime": "2021-01-01 00:11:18"}, {"id":114971527, "gid": "HGXS11", "cid":51503692, "gametime":39.51, "sent":23, "attack":29, "pcs":62, "players":2, "r1v1":0, "pos":2, "vs": "akatsuki16", "gtime": "2021-01-01 00:10:03"}, {"id":114971359, "gid": "HEV2Q2", "cid":51503692, "gametime":52.27, "sent":44, "attack":53, "pcs":97, "players":2, "r1v1":0, "pos":1, "vs": "akatsuki16", "gtime": "2021-01-01 00:08:58"}, {"id":114971197, "gid": "STT9TZ", "cid":51503692, "gametime":24.47, "sent":8, "attack":9, "pcs":50, "players":2, "r1v1":0, "pos":2, "vs": "akatsuki16", "gtime": "2021-01-01 00:08:01"}, {"id":114971096, "gid": "8IDINQ", "cid":51503692, "gametime":105.81, "sent":52, "attack":72, "pcs":191, "players":2, "r1v1":0, "pos":2, "vs": "akatsuki16", "gtime": "2021-01-01 00:07:29"}, {"id":114970797, "gid": "S1D36C", "cid":51503692, "gametime":27.08, "sent":34, "attack":36, "pcs":55, "players":2, "r1v1":0, "pos":2, "vs": "akatsuki16", "gtime": "2021-01-01 00:05:34"}, {"id":114970631, "gid": "RM8IGK", "cid":51503692, "gametime":39.67, "sent":24, "attack":25, "pcs":65, "players":2, "r1v1":0, "pos":1, "vs": "akatsuki16", "gtime": "2021-01-01 00:04:40"}, {"id":114970495, "gid": "SVVRGH", "cid":51503692, "gametime":122.77, "sent":69, "attack":110, "pcs":242, "players":2, "r1v1":0, "pos":2, "vs": "akatsuki16", "gtime": "2022-09-29 12:50:08"}, {"id":114970125, "gid": "O1R1DO", "cid":51503692, "gametime":19.56, "sent":4, "attack":9, "pcs":33, "players":2, "r1v1":0, "pos":2, "vs": "akatsuki16", "gtime": "2021-10-29 21:10:08"}, {"id":114970068, "gid": "K2RE1K", "cid":51503692, "gametime":52.96, "sent":39, "attack":46, "pcs":94, "players":2, "r1v1":0, "pos":1, "vs": "akatsuki16", "gtime": "2019-01-01 00:00:56"}]
     # test_list_of_dates = [i['gtime'] for i in test_list_of_games]
     # test_list_of_dates = [jstrishtml.datetime_to_str_naive(i) for i in test_list_of_dates]

@@ -4,7 +4,8 @@ from discord.ext import commands, tasks
 import logging
 
 import jstrisfunctions
-from jstrisfunctions import DateInit
+import jstrishtml
+from jstrisfunctions import VersusParameterInit
 from jstrisfunctions import IndivParameterInit
 
 import cache
@@ -212,21 +213,20 @@ class VsCommands(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def vs(self, ctx, username: str, offset: int = 10,
-                 first_date: str = "1000 months", last_date: str = "0 days"):
+    async def vs(self, ctx, username: str, *args):
         logging.info("Beginning vs")
         if not await GeneralMaintenance.num_processes_init(ctx):
             return None
 
-        date_init = DateInit(first_date, last_date)
-        if date_init.has_error:
-            await ctx.send(date_init.error_message)
-            return 0
+        param_init = VersusParameterInit(args)
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, date_init)
+        searched_games = CacheInit(username, param_init)
         await searched_games.fetch_all_games()
-        searched_games.returned_replays = searched_games.returned_replays[:offset]
+        searched_games.returned_replays = searched_games.returned_replays[:param_init.offset]
+        if len(searched_games.returned_replays) == 0:
+            searched_games.has_error = True
+            searched_games.error_message = f"Error: {username} has no played games"
 
         await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
@@ -236,18 +236,19 @@ class VsCommands(commands.Cog):
             return None
 
         # Calculates averages
-        apm_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, offset, 'apm')
-        spm_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, offset, 'spm')
-        pps_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, offset, 'pps')
-        weight_apm = round(jstrisfunctions.live_games_weighted_avg(searched_games.returned_replays, offset, 'attack')
-                           * 60, 2)
-        weight_spm = round(jstrisfunctions.live_games_weighted_avg(searched_games.returned_replays, offset, 'sent')
-                           * 60, 2)
-        weight_pps = round(jstrisfunctions.live_games_weighted_avg(searched_games.returned_replays, offset, 'pcs'), 2)
-        time_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, offset, 'gametime')
-        players_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, offset, 'players')
-        pos_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, offset, 'pos')
-        won_games = jstrisfunctions.games_won(searched_games.returned_replays, offset)
+        apm_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'apm')
+        spm_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'spm')
+        pps_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'pps')
+        weight_apm = round(jstrisfunctions.live_games_weighted_avg(searched_games.returned_replays, param_init.offset,
+                                                                   'attack') * 60, 2)
+        weight_spm = round(jstrisfunctions.live_games_weighted_avg(searched_games.returned_replays, param_init.offset,
+                                                                   'sent') * 60, 2)
+        weight_pps = round(jstrisfunctions.live_games_weighted_avg(searched_games.returned_replays, param_init.offset,
+                                                                   'pcs'), 2)
+        time_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'gametime')
+        players_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'players')
+        pos_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'pos')
+        won_games = jstrisfunctions.games_won(searched_games.returned_replays, param_init.offset)
 
         # Discord formatting
         embed = await embed_init(username)
@@ -270,18 +271,15 @@ class VsCommands(commands.Cog):
         logging.info("Finishing vs")
 
     @commands.command()
-    async def allmatchups(self, ctx, username: str, first_date: str = "1000 months", last_date: str = "0 days"):
+    async def allmatchups(self, ctx, username: str, *args):
         logging.info("Beginning allmatchups")
-        date_init = DateInit(first_date, last_date)
-        if date_init.has_error:
-            await ctx.send(date_init.error_message)
-            return 0
+        param_init = VersusParameterInit(args)
 
         if not await GeneralMaintenance.num_processes_init(ctx):
             return None
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, date_init)
+        searched_games = CacheInit(username, param_init)
         await searched_games.fetch_all_games()
 
         await GeneralMaintenance.num_processes_finish()
@@ -323,15 +321,11 @@ class VsCommands(commands.Cog):
         logging.info("Finishing allmatchups")
 
     @commands.command()
-    async def vsmatchup(self, ctx, username: str, opponent: str, first_date: str = "1000 months",
-                        last_date: str = "0 days"):
+    async def vsmatchup(self, ctx, username: str, opponent: str, *args):
         logging.info("Beginning vsmatchup")
         username = username.lower()
         opponent = opponent.lower()
-        date_init = DateInit(first_date, last_date)
-        if date_init.has_error:
-            await ctx.send(date_init.error_message)
-            return 0
+        param_init = VersusParameterInit(args)
 
         if not await GeneralMaintenance.num_processes_init(ctx):
             return None
@@ -339,7 +333,7 @@ class VsCommands(commands.Cog):
 
         # Username's games
         logging.info(f"Beginning {username}")
-        searched_games = CacheInit(username, date_init)
+        searched_games = CacheInit(username, param_init)
         await searched_games.fetch_all_games()
 
         if searched_games.has_error:
@@ -354,7 +348,7 @@ class VsCommands(commands.Cog):
         # Opponent's games
         logging.info(f"Beginning {opponent}, first: {list_of_opponents[opponent]['min_time']}, "
                      f"last: {list_of_opponents[opponent]['max_time']}")
-        searched_games = CacheInit(opponent, date_init)
+        searched_games = CacheInit(opponent, param_init)
         await searched_games.fetch_all_games()
 
         if searched_games.has_error:
@@ -375,48 +369,6 @@ class VsCommands(commands.Cog):
         await ctx.send(embed=embed2)
 
         logging.info("Finishing vsmatchup")
-
-    # @commands.command()
-    # async def vsprogress(self, ctx, username: str, first_date: str = "1000 months", last_date: str = "0 days"):
-    #     logging.info("Beginning allmatchups")
-    #     date_init = DateInit(first_date, last_date)
-    #     if date_init.has_error:
-    #         await ctx.send(date_init.error_message)
-    #         return 0
-    #
-    #     first_date = date_init.first
-    #     last_date = date_init.last
-    #
-    #     if not await GeneralMaintenance.num_processes_init(ctx):
-    #         return None
-    #
-    #     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-    #     searched_games = await LOOP.run_in_executor(ThreadPoolExecutor(),
-    #                                                 UserLiveGames,
-    #                                                 username, 1000000000, first_date, last_date)
-    #     await GeneralMaintenance.num_processes_finish()
-    #     await init_message.delete()
-    #     if searched_games.has_error:
-    #         await ctx.send(ctx.author.mention)
-    #         await ctx.send(searched_games.error_message)
-    #         return None
-    #
-    #     all_games = searched_games.fetched_and_cached_replays
-    #     list_of_times = [datetime.datetime.strptime(game['gtime'], "%Y-%m-%d %H:%M:%S") for game in all_games]
-    #     list_of_apms = [game['apm'] for game in all_games]
-    #     list_of_sizes = [5 for game in list_of_times]
-    #
-    #     plt.xlabel('Date')
-    #     plt.ylabel('Apm')
-    #     plt.title(f'{username}: Apm Over Time')
-    #     plt.ylim(top=150)
-    #     plt.scatter(list_of_times, list_of_apms, list_of_sizes)
-    #     plt.savefig('saved_figure.png')
-    #     with open('saved_figure.png', "rb") as fh:
-    #         f = discord.File(fh, filename='saved_figure.png')
-    #
-    #     await ctx.send(file=f)
-    #     plt.clf()
 
     @staticmethod
     async def vs_matchup_embed(ctx, username: str, opponent: str, list_of_opponents: dict):
@@ -468,11 +420,54 @@ async def embed_init(username: str) -> discord.Embed:
     return embed
 
 
-@tasks.loop(seconds=5)
+@tasks.loop(hours=24)
 async def clear_unaccessed_replays():
     logging.info('pruning start')
     cache.prune_unused_stats()
     logging.info('pruning done')
+
+
+@BadgerBot.command()
+async def totalgametime(ctx, username: str):
+    logging.info("Beginning total_gametime")
+    init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
+    all_gamemodes = ['sprint20', 'sprint40', 'sprint100', 'sprint1000', 'cheese10', 'cheese18', 'cheese100', 'ultra',
+                     'survival', '20tsd', 'pcmode', 'vs']
+    total_time = 0
+    embed = await embed_init(username)
+
+    for gamemode in all_gamemodes:
+        if gamemode != 'vs':
+            curr_gamemode = CacheInit(username, IndivParameterInit((gamemode, '')))
+        else:
+            curr_gamemode = CacheInit(username, VersusParameterInit(('0001-01-01 00:00:00', '9999-01-01 00:00:00')))
+        await curr_gamemode.fetch_all_games()
+
+        gamemode_total_time = 0
+        for replay in curr_gamemode.returned_replays:
+
+            if 'time' in replay.keys():
+                gamemode_total_time += jstrishtml.clock_to_seconds(replay['time'])
+            elif 'gametime' in replay.keys():
+                gamemode_total_time += float(replay['gametime'])
+            elif gamemode == 'pcmode':
+                gamemode_total_time += replay['blocks'] / replay['pps']
+        if gamemode == 'ultra':
+            gamemode_total_time += 120 * len(curr_gamemode.returned_replays)
+
+        embed.add_field(name=f'**{gamemode}:**', value=jstrishtml.seconds_to_clock(gamemode_total_time), inline=True)
+
+        total_time += gamemode_total_time
+
+    total_time = jstrishtml.seconds_to_clock(total_time)
+    embed.add_field(name=f'**total time:**', value=total_time, inline=True)
+
+    embed.set_footer(text='Total time does not count uncompleted replays. Due to how jstris stores replays, only the '
+                          'top 200 pcmode and 20tsd replays will be counted.')
+
+    await init_message.delete()
+    await ctx.send(ctx.author.mention)
+    await ctx.send(embed=embed)
 
 if __name__ == "__main__":
 
@@ -488,4 +483,4 @@ if __name__ == "__main__":
 
 # To do list
 # indiv stats for apm and such
-# Implement date accessed; delete by date accessed by setting up task
+# Versus param init

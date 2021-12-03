@@ -10,7 +10,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# Returns all_replays_ever containing entries of following dict:
+# Returns fetched_and_cached_replays containing entries of following dict:
 # id, gid, cid, gametime, sent, attack, rep, pcs, players, r1v1, pos, vs, gtime, apm, spm, pps
 # Ex: {"id":201211863,"gid":"MX2G04","cid":88899054,"gametime":71.31,"sent":81,
 # "attack":94,"rep":"3","pcs":133,"players":4,"r1v1":0,"pos":1,"vs":"Torp","gtime":"2021-11-08 07:56:19"}
@@ -28,7 +28,7 @@ class UserLiveGames:
         :param first_date: str
         :param last_date: str
 
-        :return all_replays_ever: (list)
+        :return fetched_and_cached_replays: (list)
                 parameters from jstris api + (apm, spm, pps)
 
         """
@@ -164,7 +164,6 @@ class UserLiveGames:
         Stores a url's data into self.page_request
         """
         logging.info(f"Getting url: {url}")
-        print(url)
         r = self.my_session.get(url)
         self.page_request = r.json()
         time.sleep(1.5)
@@ -436,7 +435,6 @@ class UserIndivGames:
         """
 
         logging.info(f"Getting url: {url}")
-        print(url)
         r = self.my_session.get(url)
         self.page_request = r.text
         self.edit_html_request()
@@ -535,7 +533,7 @@ class UserIndivGames:
     def duplicate_replay_deleter(self) -> None:
         """
 
-        :return: all_replays_ever with duplicate replays deleted
+        :return: fetched_and_cached_replays with duplicate replays deleted
         """
 
         if len(self.all_replays) == 1:
@@ -560,7 +558,6 @@ if __name__ == "__main__":
     # stats= pstats.Stats(pr)
     # stats.sort_stats(pstats.SortKey.TIME)
     # stats.print_stats()
-
 
     h = UserLiveGames(username='sio')
 

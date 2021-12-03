@@ -254,7 +254,7 @@ class IndivParameterInit:
         elif my_str == "sprint100":
             a = {"game": '1', "mode": "3", "gamemode": 'sprint'}
         elif my_str == "sprint1000":
-            a = {"game": '1', "mode": "1", "gamemode": 'sprint'}
+            a = {"game": '1', "mode": "4", "gamemode": 'sprint'}
         elif my_str == "cheese":
             a = {"game": '3', "mode": "3", "gamemode": 'cheese'}
         elif my_str == "cheese10":
@@ -580,7 +580,7 @@ if __name__ == "__main__":
     g = IndivParameterInit(('cheese', 'july 12, 2020', 'august 2021'))
     print(g)
 
-    first = '2021-05-30 00:43:41'
+    first = ''
     second = '2021-10-05 01:23:56'
 
     print(DateInit(first, second))

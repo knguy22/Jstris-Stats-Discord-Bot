@@ -9,6 +9,8 @@ import pytz
 import logging
 logger = logging.getLogger(__name__)
 
+headers = {
+    'User-Agent': 'JstrisStatsBot'}
 
 # Returns fetched_and_cached_replays containing entries of following dict:
 # id, gid, cid, gametime, sent, attack, rep, pcs, players, r1v1, pos, vs, gtime, apm, spm, pps
@@ -16,6 +18,7 @@ logger = logging.getLogger(__name__)
 # "attack":94,"rep":"3","pcs":133,"players":4,"r1v1":0,"pos":1,"vs":"Torp","gtime":"2021-11-08 07:56:19"}
 
 #  If username doesn't exist or there are no games, error will be logged into error_message
+
 
 class UserLiveGames:
 
@@ -164,7 +167,7 @@ class UserLiveGames:
         Stores a url's data into self.page_request
         """
         logging.info(f"Getting url: {url}")
-        r = self.my_session.get(url)
+        r = self.my_session.get(url, headers=headers)
         self.page_request = r.json()
         time.sleep(1.5)
         if len(self.page_request) < 50:
@@ -435,7 +438,7 @@ class UserIndivGames:
         """
 
         logging.info(f"Getting url: {url}")
-        r = self.my_session.get(url)
+        r = self.my_session.get(url, headers=headers)
         self.page_request = r.text
         self.edit_html_request()
         time.sleep(1.5)

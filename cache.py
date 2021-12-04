@@ -19,6 +19,7 @@ import logging
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
+
 logger = logging.getLogger(__name__)
 LOOP = asyncio.get_event_loop()
 
@@ -44,9 +45,7 @@ class CacheInit:
     async def fetch_all_games(self):
 
         """
-
         :return: self.returned_replays
-
         All replays ever filtered out by period; all replays ever are stored into stats.json
         """
 
@@ -65,6 +64,10 @@ class CacheInit:
         # Indiv gamemodes
         elif type(self.params) == jstrisfunctions.IndivParameterInit:
             await self.fetch_indiv()
+
+        else:
+            self.has_error = True
+            self.error_message = f'Not valid param type: {self.params}, {type(self.params)}'
 
     async def fetch_versus(self):
         self.fetch_user()
@@ -144,9 +147,7 @@ class CacheInit:
     def fetch_user(self):
         """
         Dictionary containing all gamemodes of user; date of last replay; all replays stored of specific gamemode
-
         :return: self.user_dict, self.cached_date, self.cached_replays
-
         """
         self.cached_date = ''
         self.cached_replays = []
@@ -164,7 +165,6 @@ class CacheInit:
 
     async def vs_reduce_fetched_stats(self):
         """
-
         :return: self.fetched_replays: skim off unneeded stats to save memory
         """
         reduced_all_stats = []
@@ -180,9 +180,7 @@ class CacheInit:
 
     async def vs_period_filter(self):
         """
-
         :return: new_list_of_games
-
         Filtered by first date and last date
         """
         new_list_of_games = []
@@ -213,7 +211,6 @@ class CacheInit:
 
         """
         Recalculate useful stats like apm, spm, pps
-
         :return: self.returned_replays
         """
         for i, j in enumerate(self.returned_replays):
@@ -225,7 +222,6 @@ class CacheInit:
     async def indiv_reduce_fetched_stats(self):
         """
         Reduces unnecessary statistics/attributes
-
         :return: self.fetched_replays
         """
         reduced_all_stats = []
@@ -238,7 +234,6 @@ class CacheInit:
     async def indiv_period_filter(self) -> list:
         """
         Filters games by first and last date
-
         :return: self.fetched_and_cached_replays
         """
         new_list_of_games = []
@@ -265,7 +260,6 @@ class CacheInit:
         """
         Parses through old stats.json and appends all other users into new_stats.json.
         Adds new_user at the end
-
         :param new_username_stats: dictionary of modified user
         :return: stats.json
         """
@@ -296,7 +290,6 @@ class CacheInit:
     def replace_decimals(obj: dict):
         """
         Replaces objects with Decimal class with floats (this undoes ijson turning all floats into Decimal)
-
         :param obj: nested dictionary/list
         :return: obj:
         """
@@ -318,7 +311,6 @@ class CacheInit:
     async def params_to_str_key(params: jstrisfunctions.IndivParameterInit) -> str:
         """
         Assigns gamemode key based on params.game
-
         :param params: IndivParameterInit
         :return: str_search
         """
@@ -355,7 +347,6 @@ class CacheInit:
 
         """
         Deletes duplicate replays
-
         :param my_list: list of replays
         :return: new_list:
         """
@@ -377,7 +368,6 @@ class CacheInit:
     async def not_has_games(my_list: list) -> bool:
         """
         Self explanatory
-
         :param my_list: list of replays
         :return:
         """
@@ -388,7 +378,6 @@ class CacheInit:
     def __repr__(self):
         """
         Debugging purposes
-
         :return:
         """
         return f'{self.error_message}'
@@ -397,7 +386,6 @@ class CacheInit:
 def check_stats_json_exists():
     """
     Creates stats.json if needed; cache init doesn't work if there isn't at least an empty list inside of the json
-
     :return:
     """
     if not os.path.exists("stats.json"):
@@ -457,29 +445,41 @@ def prune_unused_stats():
 
 
 if __name__ == "__main__":
-    # async def foo(loop):
-    #     game_stats = CacheInit('sio', jstrisfunctions.DateInit('June 25, 2019', 'day'))
-    #     await game_stats.fetch_all_games()
-    #
-    #     dates = jstrisfunctions.opponents_matchups(game_stats.returned_replays)
-    #     dates = dates['reminder']
-    #     game_stats = CacheInit('reminder', jstrisfunctions.DateInit(dates['min_time'], dates['max_time']))
-    #     await game_stats.fetch_all_games()
-    #
-    #     game_stats = CacheInit('truebulge', jstrisfunctions.IndivParameterInit(('cheese', 'day')))
-    #     await game_stats.fetch_all_games()
-    #     print(game_stats.returned_replays)
-    #
-    #     loop.stop()
-    #
-    #
+
+    async def foo():
+        game_stats = CacheInit('sio', jstrisfunctions.VersusParameterInit(('June 25, 2019', 'day')))
+        await game_stats.fetch_all_games()
+
+        dates = jstrisfunctions.opponents_matchups(game_stats.returned_replays)
+        dates = dates['reminder']
+        game_stats = CacheInit('reminder', jstrisfunctions.VersusParameterInit((dates['min_time'], dates['max_time'])))
+        await game_stats.fetch_all_games()
+
+        game_stats = CacheInit('truebulge', jstrisfunctions.IndivParameterInit(('cheese', 'day')))
+        await game_stats.fetch_all_games()
+        print(game_stats.returned_replays)
+
+
     # local_loop = asyncio.new_event_loop()
     # asyncio.set_event_loop(local_loop)
     # LOOP = asyncio.get_event_loop()
     # asyncio.ensure_future(foo(local_loop))
     # local_loop.run_forever()
 
-    prune_unused_stats()
+
+
+    import cProfile
+    import pstats
+
+    with cProfile.Profile() as pr:
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(asyncio.gather(
+            foo()
+        ))
+    stats= pstats.Stats(pr)
+    stats.sort_stats(pstats.SortKey.TIME)
+    stats.print_stats()
+
 
     # await ggame_Stats.fetch_all_games()
 

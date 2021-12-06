@@ -39,6 +39,11 @@ class GeneralMaintenance(commands.Cog):
                        "1D54qjRTNmkOBXcvff1vpiph5E5txnd6J6R2oI9e6ZMM/edit?usp=sharing")
         logging.info("Finish help")
 
+    @commands.command()
+    async def numprocesses(self, ctx):
+        global num_processes
+        await ctx.send(f'{num_processes} processes')
+
     @staticmethod
     async def num_processes_init(ctx) -> bool:
         global num_processes
@@ -235,6 +240,12 @@ class VsCommands(commands.Cog):
             await ctx.send(searched_games.error_message)
             return None
 
+        # Calculate dates
+        list_of_dates = [i['gtime'] for i in searched_games.returned_replays]
+        dates = jstrisfunctions.new_first_last_date(list_of_dates)
+        first_date = dates[0]
+        last_date = dates[1]
+
         # Calculates averages
         apm_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'apm')
         spm_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'spm')
@@ -261,6 +272,8 @@ class VsCommands(commands.Cog):
         embed.add_field(name="**time (seconds):**", value=str(time_avg), inline=True)
         embed.add_field(name="**final position:**", value=str(pos_avg), inline=True)
         embed.add_field(name="**players:**", value=str(players_avg), inline=True)
+        embed.add_field(name="**first game (CET):**", value=first_date, inline=True)
+        embed.add_field(name="**last game (CET):**", value=last_date, inline=True)
         embed.add_field(name="**games won:**", value=f"{won_games}  "
                                                      f"({won_games / len(searched_games.returned_replays) * 100:.2f}%)",
                         inline=False)

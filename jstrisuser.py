@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 headers = {
     'User-Agent': 'JstrisStatsBot'}
 
+
 # Returns fetched_and_cached_replays containing entries of following dict:
 # id, gid, cid, gametime, sent, attack, rep, pcs, players, r1v1, pos, vs, gtime, apm, spm, pps
 # Ex: {"id":201211863,"gid":"MX2G04","cid":88899054,"gametime":71.31,"sent":81,

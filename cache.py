@@ -26,7 +26,7 @@ LOOP = asyncio.get_event_loop()
 
 class CacheInit:
     def __init__(self, username: str, params: [jstrisfunctions.DateInit, jstrisfunctions.IndivParameterInit]):
-        self.username = username
+        self.username = username.lower()
         self.params = params
 
         self.gamemode_key = ""
@@ -96,9 +96,7 @@ class CacheInit:
 
         if not self.has_error:
             list_of_dates = [i['gtime'] for i in self.fetched_and_cached_replays]
-            for i, j in enumerate(list_of_dates):
-                if j is None:
-                    print(i, self.fetched_and_cached_replays[i])
+
             final_date = jstrisfunctions.new_first_last_date(list_of_dates)[1]
 
             self.user_dict[self.username]['vs'] = {'date': final_date, 'replays': self.fetched_and_cached_replays,
@@ -447,26 +445,16 @@ def prune_unused_stats():
 if __name__ == "__main__":
 
     async def foo():
-        game_stats = CacheInit('sio', jstrisfunctions.VersusParameterInit(('June 25, 2019', 'day')))
+        game_stats = CacheInit('superman', jstrisfunctions.VersusParameterInit(('June 25, 2019', 'day')))
         await game_stats.fetch_all_games()
 
-        dates = jstrisfunctions.opponents_matchups(game_stats.returned_replays)
-        dates = dates['reminder']
-        game_stats = CacheInit('reminder', jstrisfunctions.VersusParameterInit((dates['min_time'], dates['max_time'])))
-        await game_stats.fetch_all_games()
-
-        game_stats = CacheInit('truebulge', jstrisfunctions.IndivParameterInit(('cheese', 'day')))
-        await game_stats.fetch_all_games()
-        print(game_stats.returned_replays)
-
-
-    # local_loop = asyncio.new_event_loop()
-    # asyncio.set_event_loop(local_loop)
-    # LOOP = asyncio.get_event_loop()
-    # asyncio.ensure_future(foo(local_loop))
-    # local_loop.run_forever()
-
-
+        # dates = jstrisfunctions.opponents_matchups(game_stats.returned_replays)
+        # dates = dates['reminder']
+        # game_stats = CacheInit('reminder', jstrisfunctions.VersusParameterInit((dates['min_time'], dates['max_time'])))
+        # await game_stats.fetch_all_games()
+        #
+        # game_stats = CacheInit('truebulge', jstrisfunctions.IndivParameterInit(('cheese', 'day')))
+        # await game_stats.fetch_all_games()
 
     import cProfile
     import pstats

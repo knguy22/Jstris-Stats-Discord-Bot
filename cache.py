@@ -10,7 +10,8 @@ import datetime
 import pytz
 
 import jstrisfunctions
-import jstrishtml
+from jstrisfunctions import DateInit
+
 from jstrisuser import UserLiveGames
 from jstrisuser import UserIndivGames
 import os
@@ -104,7 +105,7 @@ class CacheInit:
             final_date = final_date[1]
 
             self.user_dict[self.username]['vs'] = {'date': final_date, 'replays': self.fetched_and_cached_replays,
-                                                   'date accessed': jstrishtml.datetime_to_str_naive(
+                                                   'date accessed': DateInit.datetime_to_str_naive(
                                                        datetime.datetime.now(tz=pytz.timezone('CET')))[:-7]}
             await self.append_file(self.user_dict)
 
@@ -137,11 +138,11 @@ class CacheInit:
         if not self.has_error:
             list_of_dates = [i['date (CET)'] for i in self.fetched_and_cached_replays]
             final_date = max([jstrisfunctions.DateInit.str_to_datetime(i) for i in list_of_dates])
-            final_date = jstrishtml.datetime_to_str_naive(final_date)
+            final_date = DateInit.datetime_to_str_naive(final_date)
 
             self.user_dict[self.username][await self.params_to_str_key(self.params)] = \
                 {'date': final_date, 'replays': self.fetched_and_cached_replays,
-                 'date accessed': jstrishtml.datetime_to_str_naive(datetime.datetime.now(tz=pytz.timezone('CET')))[:-7]}
+                 'date accessed': DateInit.datetime_to_str_naive(datetime.datetime.now(tz=pytz.timezone('CET')))[:-7]}
             await self.append_file(self.user_dict)
             self.returned_replays = await self.indiv_period_filter()
             await self.indiv_stats_producer()

@@ -153,6 +153,13 @@ class DateInit:
         a = a.replace(tzinfo=pytz.timezone('CET'))
         return a
 
+    @staticmethod
+    def datetime_to_str_naive(s: datetime) -> str:
+        s = str(s)
+        if "+" in s:
+            return s[:-6]
+        return s
+
     def first_vs_last(self) -> None:
         try:
             first = self.str_to_datetime(self.first)
@@ -557,7 +564,7 @@ async def new_first_last_date(list_of_dates: list) -> tuple:
     # Normal case; list now only has ordered dates
     min_time = list_of_dates[0]
     max_time = list_of_dates[-1]
-    return str(min_time), str(max_time)
+    return DateInit.datetime_to_str_naive(min_time), DateInit.datetime_to_str_naive(max_time)
 
 
 async def opponents_matchups(list_of_games: list) -> dict:

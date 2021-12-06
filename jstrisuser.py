@@ -567,8 +567,3 @@ if __name__ == "__main__":
 
     print(h.first_date_str, h.last_date_str)
 
-    g = jstrisfunctions.opponents_matchups(h.all_replays)
-    print(g)
-
-    k = UserLiveGames(username='octuple8', first_date=g['octuple8']['min_time'], last_date=g['octuple8']['max_time'])
-    print(jstrisfunctions.opponents_matchups(k.all_replays))

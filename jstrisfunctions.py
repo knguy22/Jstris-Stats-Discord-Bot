@@ -21,8 +21,6 @@ class DateInit:
                 self.last:"%Y-%m-%d %H:%M:%S"
         """
 
-        logging.info(f"DateInit inputs: {first} {last}")
-
         self.first: str = first.lower()
         self.last: str = last.lower()
         self.has_error = False
@@ -505,7 +503,7 @@ def first_last_date(list_of_dates: list) -> tuple:
     return min_time, max_time
 
 
-def new_first_last_date(list_of_dates: list) -> tuple:
+async def new_first_last_date(list_of_dates: list) -> tuple:
 
     # Edge cases of 1 and 2 indices; self explanatory
 
@@ -562,7 +560,7 @@ def new_first_last_date(list_of_dates: list) -> tuple:
     return str(min_time), str(max_time)
 
 
-def opponents_matchups(list_of_games: list) -> dict:
+async def opponents_matchups(list_of_games: list) -> dict:
 
     all_opponents = {}
 
@@ -605,7 +603,7 @@ def opponents_matchups(list_of_games: list) -> dict:
                 list_of_dates.append(DateInit.str_to_datetime(game['gtime']))
 
         # Finding min and max time for each opponent
-        min_max_time = new_first_last_date(list_of_dates)
+        min_max_time = await new_first_last_date(list_of_dates)
 
         all_opponents[opp]['min_time'] = min_max_time[0]
         all_opponents[opp]['max_time'] = min_max_time[1]

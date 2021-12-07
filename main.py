@@ -11,12 +11,16 @@ from jstrisfunctions import IndivParameterInit
 import cache
 from cache import CacheInit
 
+import asyncio
+
 intents = discord.Intents.default()
 intents.members = True
 description = 'Third party BadgerBot to quickly gather Jstris stats on individual players'
 BadgerBot = commands.Bot(command_prefix='?', description=description, intents=intents, help_command=None)
 
 num_processes = 0
+
+lock = asyncio.Lock()
 
 logging.basicConfig(level=logging.INFO, filename="logjstris.log", datefmt='%m/%d/%Y %H:%M:%S',
                     format='%(levelname)s: %(module)s: %(message)s; %(asctime)s')
@@ -28,24 +32,30 @@ class GeneralMaintenance(commands.Cog):
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         print(f'Logged in as {BadgerBot.user} (ID: {BadgerBot.user.id})')
         print('------')
 
     @commands.command()
-    async def help(self, ctx):
+    async def help(self, ctx) -> None:
         logging.info("Executing help")
         await ctx.send("https://docs.google.com/document/d/"
                        "1D54qjRTNmkOBXcvff1vpiph5E5txnd6J6R2oI9e6ZMM/edit?usp=sharing")
         logging.info("Finish help")
 
     @commands.command()
-    async def numprocesses(self, ctx):
+    async def numprocesses(self, ctx) -> None:
         global num_processes
         await ctx.send(f'{num_processes} processes')
 
     @staticmethod
     async def num_processes_init(ctx) -> bool:
+
+        """
+        Controls the number of processes/CacheInit.fetch_all_games going on at the same time; max processes is 5
+        :param ctx:
+        :return: bool: option on whether to execute a new CacheInit or not
+        """
         global num_processes
         logging.info(f"Checking num processes: {num_processes}")
         num_processes += 1
@@ -59,10 +69,30 @@ class GeneralMaintenance(commands.Cog):
         return True
 
     @staticmethod
-    async def num_processes_finish():
+    async def num_processes_finish() -> None:
+        """
+        Subtract num_processes by 1 when a process is finished
+        :return:
+        """
+
         global num_processes
         num_processes -= 1
         logging.info(f"Finish process: {num_processes}")
+
+    @commands.command()
+    async def prune_user(self, ctx, username) -> None:
+        """
+        Mainly used for deleting corrupted data; corrupted data in usernames usually comes about when
+        keyboard interrupt stops the program while it's making a new stats.json file
+
+        :param ctx:
+        :param username:
+        :return:
+        """
+        logging.info('pruning start')
+        await cache.prune_user(lock, username)
+        await ctx.send(f"Pruned {username}")
+        logging.info('pruning done')
 
 
 # SINGLE PLAYER COMMANDS
@@ -72,7 +102,7 @@ class IndivCommands(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def least(self, ctx, username: str, *args):
+    async def least(self, ctx, username: str, *args) -> None:
         logging.info("Executing least")
         if not await GeneralMaintenance.num_processes_init(ctx):
             return None
@@ -80,7 +110,7 @@ class IndivCommands(commands.Cog):
         my_ps = IndivParameterInit(args)
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, my_ps)
+        searched_games = CacheInit(username, my_ps, lock)
         await searched_games.fetch_all_games()
         await GeneralMaintenance.num_processes_finish()
 
@@ -95,7 +125,7 @@ class IndivCommands(commands.Cog):
         logging.info("Finish least")
 
     @commands.command()
-    async def most(self, ctx, username: str, *args):
+    async def most(self, ctx, username: str, *args) -> None:
         logging.info("Executing most")
 
         if not await GeneralMaintenance.num_processes_init(ctx):
@@ -104,7 +134,7 @@ class IndivCommands(commands.Cog):
         my_ps = IndivParameterInit(args)
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, my_ps)
+        searched_games = CacheInit(username, my_ps, lock)
         await searched_games.fetch_all_games()
 
         await GeneralMaintenance.num_processes_finish()
@@ -119,7 +149,7 @@ class IndivCommands(commands.Cog):
         logging.info("Finishing most")
 
     @commands.command()
-    async def average(self, ctx, username: str, *args):
+    async def average(self, ctx, username: str, *args) -> None:
         logging.info("Beginning average")
         if not await GeneralMaintenance.num_processes_init(ctx):
             return None
@@ -127,13 +157,13 @@ class IndivCommands(commands.Cog):
         my_ps = IndivParameterInit(args)
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, my_ps)
+        searched_games = CacheInit(username, my_ps, lock)
         await searched_games.fetch_all_games()
 
         await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
+        await ctx.send(ctx.author.mention)
         if searched_games.has_error:
-            await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
         else:
             my_average = jstrisfunctions.average_(searched_games.returned_replays, my_ps.param)
@@ -141,21 +171,21 @@ class IndivCommands(commands.Cog):
         logging.info("Finishing average")
 
     @commands.command()
-    async def numgames(self, ctx, username: str, *args):
+    async def numgames(self, ctx, username: str, *args) -> None:
         logging.info("Beginning numgames")
         if not await GeneralMaintenance.num_processes_init(ctx):
             return None
 
         my_ps = IndivParameterInit(args)
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, my_ps)
+        searched_games = CacheInit(username, my_ps, lock)
         await searched_games.fetch_all_games()
 
         await GeneralMaintenance.num_processes_finish()
 
         await init_message.delete()
+        await ctx.send(ctx.author.mention)
         if searched_games.has_error:
-            await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
         else:
             a = len(searched_games.returned_replays)
@@ -163,7 +193,7 @@ class IndivCommands(commands.Cog):
         logging.info("Finishing numgames")
 
     @commands.command()
-    async def subblocks(self, ctx, username: str, blocks: str, *args):
+    async def subblocks(self, ctx, username: str, blocks: str, *args) -> None:
         if not blocks.isdigit():
             await ctx.send(f"Not valid blocks number: {blocks}")
             return None
@@ -179,7 +209,7 @@ class IndivCommands(commands.Cog):
         args = tuple(args)
 
         my_ps = IndivParameterInit(args)
-        searched_games = CacheInit(username, my_ps)
+        searched_games = CacheInit(username, my_ps, lock)
         await searched_games.fetch_all_games()
 
         await GeneralMaintenance.num_processes_finish()
@@ -218,7 +248,7 @@ class VsCommands(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def vs(self, ctx, username: str, *args):
+    async def vs(self, ctx, username: str, *args) -> None:
         logging.info("Beginning vs")
         if not await GeneralMaintenance.num_processes_init(ctx):
             return None
@@ -226,7 +256,7 @@ class VsCommands(commands.Cog):
         param_init = VersusParameterInit(args)
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, param_init)
+        searched_games = CacheInit(username, param_init, lock)
         await searched_games.fetch_all_games()
         searched_games.returned_replays = searched_games.returned_replays[:param_init.offset]
         if len(searched_games.returned_replays) == 0:
@@ -242,7 +272,7 @@ class VsCommands(commands.Cog):
 
         # Calculate dates
         list_of_dates = [i['gtime'] for i in searched_games.returned_replays]
-        dates = jstrisfunctions.new_first_last_date(list_of_dates)
+        dates = await jstrisfunctions.new_first_last_date(list_of_dates)
         first_date = dates[0]
         last_date = dates[1]
 
@@ -284,7 +314,7 @@ class VsCommands(commands.Cog):
         logging.info("Finishing vs")
 
     @commands.command()
-    async def allmatchups(self, ctx, username: str, *args):
+    async def allmatchups(self, ctx, username: str, *args) -> None:
         logging.info("Beginning allmatchups")
         param_init = VersusParameterInit(args)
 
@@ -292,7 +322,7 @@ class VsCommands(commands.Cog):
             return None
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, param_init)
+        searched_games = CacheInit(username, param_init, lock)
         await searched_games.fetch_all_games()
 
         await GeneralMaintenance.num_processes_finish()
@@ -301,7 +331,7 @@ class VsCommands(commands.Cog):
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
             return None
-        list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.returned_replays)
+        list_of_opponents = await jstrisfunctions.opponents_matchups(searched_games.returned_replays)
 
         # Discord formatting stuff
 
@@ -334,7 +364,7 @@ class VsCommands(commands.Cog):
         logging.info("Finishing allmatchups")
 
     @commands.command()
-    async def vsmatchup(self, ctx, username: str, opponent: str, *args):
+    async def vsmatchup(self, ctx, username: str, opponent: str, *args) -> None:
         logging.info("Beginning vsmatchup")
         username = username.lower()
         opponent = opponent.lower()
@@ -346,7 +376,7 @@ class VsCommands(commands.Cog):
 
         # Username's games
         logging.info(f"Beginning {username}")
-        searched_games = CacheInit(username, param_init)
+        searched_games = CacheInit(username, param_init, lock)
         await searched_games.fetch_all_games()
 
         if searched_games.has_error:
@@ -355,13 +385,13 @@ class VsCommands(commands.Cog):
             await ctx.send(searched_games.error_message)
             await GeneralMaintenance.num_processes_finish()
             return None
-        list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.returned_replays)
+        list_of_opponents = await jstrisfunctions.opponents_matchups(searched_games.returned_replays)
         embed1 = await VsCommands.vs_matchup_embed(ctx, username, opponent, list_of_opponents)
 
         # Opponent's games
         logging.info(f"Beginning {opponent}, first: {list_of_opponents[opponent]['min_time']}, "
                      f"last: {list_of_opponents[opponent]['max_time']}")
-        searched_games = CacheInit(opponent, param_init)
+        searched_games = CacheInit(opponent, param_init, lock)
         await searched_games.fetch_all_games()
 
         if searched_games.has_error:
@@ -369,7 +399,7 @@ class VsCommands(commands.Cog):
             await ctx.send(searched_games.error_message)
             await GeneralMaintenance.num_processes_finish()
             return None
-        list_of_opponents = jstrisfunctions.opponents_matchups(searched_games.returned_replays)
+        list_of_opponents = await jstrisfunctions.opponents_matchups(searched_games.returned_replays)
         embed2 = await VsCommands.vs_matchup_embed(ctx, opponent, username, list_of_opponents)
 
         # Finalizing
@@ -384,7 +414,7 @@ class VsCommands(commands.Cog):
         logging.info("Finishing vsmatchup")
 
     @staticmethod
-    async def vs_matchup_embed(ctx, username: str, opponent: str, list_of_opponents: dict):
+    async def vs_matchup_embed(ctx, username: str, opponent: str, list_of_opponents: dict) -> [None, discord.Embed]:
         embed = await embed_init(username)
 
         if opponent in list_of_opponents:
@@ -434,14 +464,26 @@ async def embed_init(username: str) -> discord.Embed:
 
 
 @tasks.loop(hours=24)
-async def clear_unaccessed_replays():
+async def clear_unaccessed_replays() -> None:
+    """
+    Deletes replays after they haven't been accessed for two weeks
+
+    :return:
+    """
     logging.info('pruning start')
-    cache.prune_unused_stats()
+    await cache.prune_unused_stats(lock)
     logging.info('pruning done')
 
 
 @BadgerBot.command()
-async def totalgametime(ctx, username: str):
+async def totalgametime(ctx, username: str) -> None:
+    """
+    Returns total game time of all indiv and versus modes
+
+    :param ctx:
+    :param username:
+    :return:
+    """
     logging.info("Beginning total_gametime")
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
     all_gamemodes = ['sprint20', 'sprint40', 'sprint100', 'sprint1000', 'cheese10', 'cheese18', 'cheese100', 'ultra',
@@ -451,9 +493,9 @@ async def totalgametime(ctx, username: str):
 
     for gamemode in all_gamemodes:
         if gamemode != 'vs':
-            curr_gamemode = CacheInit(username, IndivParameterInit((gamemode, '')))
+            curr_gamemode = CacheInit(username, IndivParameterInit((gamemode, '')), lock)
         else:
-            curr_gamemode = CacheInit(username, VersusParameterInit(('0001-01-01 00:00:00', '9999-01-01 00:00:00')))
+            curr_gamemode = CacheInit(username, VersusParameterInit(('0001-01-01 00:00:00', '9999-01-01 00:00:00')), lock)
         await curr_gamemode.fetch_all_games()
 
         gamemode_total_time = 0

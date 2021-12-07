@@ -526,6 +526,7 @@ async def new_first_last_date(list_of_dates: list) -> tuple:
     while still_pruning:
         still_pruning = False
         new_list_of_dates = []
+
         for j, k in enumerate(list_of_dates):
 
             # Checks last index of the list; ie the greatest date

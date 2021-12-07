@@ -259,11 +259,12 @@ class VsCommands(commands.Cog):
         searched_games = CacheInit(username, param_init, lock)
         await searched_games.fetch_all_games()
         searched_games.returned_replays = searched_games.returned_replays[:param_init.offset]
+        await GeneralMaintenance.num_processes_finish()
+
         if len(searched_games.returned_replays) == 0:
             searched_games.has_error = True
             searched_games.error_message = f"Error: {username} has no played games"
 
-        await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
         if searched_games.has_error:
             await ctx.send(ctx.author.mention)
@@ -430,6 +431,9 @@ class VsCommands(commands.Cog):
             embed.add_field(name='**apm (weighted):**', value=list_of_opponents[opponent]["wapm"], inline=True)
             embed.add_field(name='**spm (weighted):**', value=list_of_opponents[opponent]["wspm"], inline=True)
             embed.add_field(name='**pps (weighted):**', value=list_of_opponents[opponent]["wpps"], inline=True)
+            embed.add_field(name='**time (seconds):**', value=
+                            round(list_of_opponents[opponent]["time_sum"] / list_of_opponents[opponent]['games'], 2),
+                            inline=True)
             embed.add_field(name='**Earliest game (CET):**', value=list_of_opponents[opponent]["min_time"], inline=True)
             embed.add_field(name='**Latest game (CET):**', value=list_of_opponents[opponent]["max_time"], inline=True)
             embed.set_footer(
@@ -488,6 +492,7 @@ async def totalgametime(ctx, username: str) -> None:
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
     all_gamemodes = ['sprint20', 'sprint40', 'sprint100', 'sprint1000', 'cheese10', 'cheese18', 'cheese100', 'ultra',
                      'survival', '20tsd', 'pcmode', 'vs']
+    await GeneralMaintenance.num_processes_init(ctx)
     total_time = 0
     embed = await embed_init(username)
 
@@ -520,6 +525,7 @@ async def totalgametime(ctx, username: str) -> None:
     embed.set_footer(text='Total time does not count uncompleted replays. Due to how jstris stores replays, only the '
                           'top 200 pcmode and 20tsd replays will be counted.')
 
+    await GeneralMaintenance.num_processes_finish()
     await init_message.delete()
     await ctx.send(ctx.author.mention)
     await ctx.send(embed=embed)

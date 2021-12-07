@@ -88,7 +88,8 @@ class CacheInit:
         self.fetched_replays = self.fetched_user_class.all_replays
 
         await self.vs_reduce_fetched_stats()
-        self.fetched_and_cached_replays = self.cached_replays + self.fetched_replays
+        # Ordering matters here; fetched replays must be before cached replays
+        self.fetched_and_cached_replays = self.fetched_replays + self.cached_replays
         self.fetched_and_cached_replays = await self.duplicate_replay_deleter(self.fetched_and_cached_replays)
 
         if self.fetched_user_class.has_error:
@@ -100,7 +101,6 @@ class CacheInit:
 
         if not self.has_error:
             list_of_dates = [i['gtime'] for i in self.fetched_and_cached_replays]
-
             final_date = await jstrisfunctions.new_first_last_date(list_of_dates)
             final_date = final_date[1]
 

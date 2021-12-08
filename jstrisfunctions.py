@@ -155,6 +155,7 @@ class DateInit:
 
     @staticmethod
     def datetime_to_str_naive(s: datetime) -> str:
+        print(s)
         s = str(s)
         if "+" in s:
             return s[:-6]
@@ -512,16 +513,12 @@ def first_last_date(list_of_dates: list) -> tuple:
 
 async def new_first_last_date(list_of_dates: list) -> tuple:
 
-    # Edge cases of 1 and 2 indices; self explanatory
-
-    if len(list_of_dates) == 1:
-        return list_of_dates[0], list_of_dates[0],
-    if len(list_of_dates) == 2:
-        return min(list_of_dates), max(list_of_dates)
-
     # Higher indices now mean ascending order
-    list_of_dates.reverse()
-    still_pruning = True
+    # Skip pruning if there are only two replays
+    still_pruning = False
+    if len(list_of_dates) > 3:
+        list_of_dates.reverse()
+        still_pruning = True
 
     while still_pruning:
         still_pruning = False
@@ -552,19 +549,21 @@ async def new_first_last_date(list_of_dates: list) -> tuple:
     if len(list_of_dates) >= 3:
         if list_of_dates[0] > list_of_dates[1] > list_of_dates[2]:
             list_of_dates.pop(0)
-    else:
+    elif len(list_of_dates) == 2:
         if list_of_dates[0] > list_of_dates[1]:
             list_of_dates.pop(0)
 
-    # Does this just in case everything is pruned away; not sure if this is necessary but this is just in case
+    # Edge cases where no pruning is needed
+
     if len(list_of_dates) == 1:
-        return list_of_dates[0], list_of_dates[0],
-    if len(list_of_dates) == 2:
-        return min(list_of_dates), max(list_of_dates)
+        min_time, max_time = list_of_dates[0], list_of_dates[0],
+    elif len(list_of_dates) == 2:
+        min_time, max_time = min(list_of_dates), max(list_of_dates)
 
     # Normal case; list now only has ordered dates
-    min_time = list_of_dates[0]
-    max_time = list_of_dates[-1]
+    else:
+        min_time, max_time = list_of_dates[0], list_of_dates[-1]
+
     return DateInit.datetime_to_str_naive(min_time), DateInit.datetime_to_str_naive(max_time)
 
 

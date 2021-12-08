@@ -155,7 +155,6 @@ class DateInit:
 
     @staticmethod
     def datetime_to_str_naive(s: datetime) -> str:
-        print(s)
         s = str(s)
         if "+" in s:
             return s[:-6]

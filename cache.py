@@ -73,6 +73,10 @@ class CacheInit:
             self.has_error = True
             self.error_message = f'Not valid param type: {self.params}, {type(self.params)}'
 
+        if await self.not_has_games(self.returned_replays):
+            self.has_error = True
+            self.error_message = f"Error: {self.username} has no played games"
+
     async def fetch_versus(self) -> None:
         await self.fetch_user()
 
@@ -251,6 +255,7 @@ class CacheInit:
         for i in self.fetched_and_cached_replays:
             if first_date < jstrisfunctions.DateInit.str_to_datetime(i['date (CET)']) < last_date:
                 new_list_of_games.append(i)
+                print(i)
 
         return new_list_of_games
 
@@ -364,6 +369,9 @@ class CacheInit:
         :param my_list: list of replays
         :return: new_list:
         """
+
+        # Using frozen sets was the fastest way I could think of to delete duplicate replays while maintaining ordering
+        # Using a normal for loop is much slower
 
         frozen_set_list = []
         for i in my_list:

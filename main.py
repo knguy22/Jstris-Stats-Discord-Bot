@@ -261,10 +261,6 @@ class VsCommands(commands.Cog):
         searched_games.returned_replays = searched_games.returned_replays[:param_init.offset]
         await GeneralMaintenance.num_processes_finish()
 
-        if len(searched_games.returned_replays) == 0:
-            searched_games.has_error = True
-            searched_games.error_message = f"Error: {username} has no played games"
-
         await init_message.delete()
         if searched_games.has_error:
             await ctx.send(ctx.author.mention)

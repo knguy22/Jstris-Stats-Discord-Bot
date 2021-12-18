@@ -328,7 +328,7 @@ class VsCommands(commands.Cog):
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
             return None
-        list_of_opponents = await jstrisfunctions.opponents_matchups(searched_games.returned_replays)
+        list_of_opponents = await jstrisfunctions.opponents_matchups(searched_games.returned_replays, param_init.offset)
 
         # Discord formatting stuff
 
@@ -382,7 +382,7 @@ class VsCommands(commands.Cog):
             await ctx.send(searched_games.error_message)
             await GeneralMaintenance.num_processes_finish()
             return None
-        list_of_opponents = await jstrisfunctions.opponents_matchups(searched_games.returned_replays)
+        list_of_opponents = await jstrisfunctions.opponents_matchups(searched_games.returned_replays, param_init.offset)
         embed1 = await VsCommands.vs_matchup_embed(ctx, username, opponent, list_of_opponents)
 
         # Opponent's games
@@ -396,7 +396,7 @@ class VsCommands(commands.Cog):
             await ctx.send(searched_games.error_message)
             await GeneralMaintenance.num_processes_finish()
             return None
-        list_of_opponents = await jstrisfunctions.opponents_matchups(searched_games.returned_replays)
+        list_of_opponents = await jstrisfunctions.opponents_matchups(searched_games.returned_replays, param_init.offset)
         embed2 = await VsCommands.vs_matchup_embed(ctx, opponent, username, list_of_opponents)
 
         # Finalizing

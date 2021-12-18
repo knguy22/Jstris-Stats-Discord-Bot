@@ -410,6 +410,57 @@ class VsCommands(commands.Cog):
 
         logging.info("Finishing vsmatchup")
 
+    @commands.command()
+    async def vsmatchupreplays(self, ctx, username: str, opponent: str, *args):
+        logging.info("Beginning vsmatchupreplays")
+        username = username.lower()
+        param_init = VersusParameterInit(args)
+
+        if not await GeneralMaintenance.num_processes_init(ctx):
+            return None
+
+        init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
+
+        # Username's games
+        logging.info(f"Beginning {username}")
+        searched_games = CacheInit(username, param_init, lock)
+        await searched_games.fetch_all_games()
+
+        if searched_games.has_error:
+            await init_message.delete()
+            await ctx.send(ctx.author.mention)
+            await ctx.send(searched_games.error_message)
+            await GeneralMaintenance.num_processes_finish()
+            return None
+
+        sorted_replays = await jstrisfunctions.opponents_matchups_replays(searched_games.returned_replays)
+
+        if opponent not in sorted_replays:
+            await init_message.delete()
+            await ctx.send(ctx.author.mention)
+            await ctx.send(f'No played games of {username} against {opponent}')
+            await GeneralMaintenance.num_processes_finish()
+            return None
+
+        list_of_replay_links = []
+        for index, replay in enumerate(sorted_replays[opponent]):
+            if replay['rep'] and index < param_init.offset:
+                list_of_replay_links.append(f"https://jstris.jezevec10.com/replay/1v1/{replay['gid']}?u={username}")
+
+        # You want the oldest replays first if you're recording
+        list_of_replay_links.reverse()
+
+        with open('versusmatchupreplays.txt', 'w') as f:
+            f.write('localStorage.playReplays = ')
+            f.write(str(list_of_replay_links))
+
+        with open("versusmatchupreplays.txt", "rb") as file:
+            await init_message.delete()
+            await ctx.send(ctx.author.mention)
+            await ctx.send(f'Your available replays of {username} vs {opponent} are:', file=discord.File(file, f'{username} vs {opponent}.txt'))
+
+
+
     @staticmethod
     async def vs_matchup_embed(ctx, username: str, opponent: str, list_of_opponents: dict) -> [None, discord.Embed]:
         embed = await embed_init(username)

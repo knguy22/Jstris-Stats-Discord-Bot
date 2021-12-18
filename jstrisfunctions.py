@@ -630,6 +630,22 @@ async def opponents_matchups(list_of_games: list, max_games: int) -> dict:
     return dict(sorted(all_opponents.items(), key=lambda x: x[1]['games'], reverse=True))
 
 
+async def opponents_matchups_replays(list_of_games: list) -> dict:
+    games_sorted_by_opponent = {}
+
+    for game in list_of_games:
+        if game['players'] != 2 or game['vs'] is None:
+            continue
+            
+        player_name = game['vs'].lower()
+        if player_name not in games_sorted_by_opponent:
+            games_sorted_by_opponent[player_name] = [game]
+        else:
+            games_sorted_by_opponent[player_name].append(game)
+
+    return games_sorted_by_opponent
+
+
 if __name__ == "__main__":
     # first_date = 'august 2010'
     # second_date = 'september 2020'

@@ -456,6 +456,7 @@ class VsCommands(commands.Cog):
 
         with open("versusmatchupreplays.txt", "rb") as file:
             await init_message.delete()
+            await GeneralMaintenance.num_processes_finish()
             await ctx.send(ctx.author.mention)
             await ctx.send(f'Your available replays of {username} vs {opponent} are:', file=discord.File(file, f'{username} vs {opponent}.txt'))
 

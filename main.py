@@ -583,11 +583,13 @@ if __name__ == "__main__":
     cache.check_stats_json_exists()
     clear_unaccessed_replays.start()
 
-    # Token
     BadgerBot.add_cog(GeneralMaintenance(BadgerBot))
     BadgerBot.add_cog(IndivCommands(BadgerBot))
     BadgerBot.add_cog(VsCommands(BadgerBot))
-    BadgerBot.run('OTA2NzEyOTE0Njc1Nzg5ODU1.YYcoNA.K2uerr4Q3kwY3Rj3RnLWTemZNbQ')
+
+    with open('token.txt', 'r') as r:
+        token = r.readline()
+        BadgerBot.run(token)
 
 
 # To do list

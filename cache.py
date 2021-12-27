@@ -255,7 +255,6 @@ class CacheInit:
         for i in self.fetched_and_cached_replays:
             if first_date < jstrisfunctions.DateInit.str_to_datetime(i['date (CET)']) < last_date:
                 new_list_of_games.append(i)
-                print(i)
 
         return new_list_of_games
 

@@ -101,7 +101,7 @@ class IndivCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.command(aliases=['min'])
     async def least(self, ctx, username: str, *args) -> None:
         logging.info("Executing least")
         if not await GeneralMaintenance.num_processes_init(ctx):
@@ -124,7 +124,7 @@ class IndivCommands(commands.Cog):
 
         logging.info("Finish least")
 
-    @commands.command()
+    @commands.command(aliases=['max'])
     async def most(self, ctx, username: str, *args) -> None:
         logging.info("Executing most")
 
@@ -148,7 +148,7 @@ class IndivCommands(commands.Cog):
             await IndivCommands.replay_send(ctx, a)
         logging.info("Finishing most")
 
-    @commands.command()
+    @commands.command(aliases=['avg'])
     async def average(self, ctx, username: str, *args) -> None:
         logging.info("Beginning average")
         if not await GeneralMaintenance.num_processes_init(ctx):

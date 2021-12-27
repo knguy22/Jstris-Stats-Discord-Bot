@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 with open('header.txt') as h:
     header = h.readline()
+    header = header.replace('\n', '')
     headers = {
         'User-Agent': header}
 

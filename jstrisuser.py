@@ -9,8 +9,10 @@ import pytz
 import logging
 logger = logging.getLogger(__name__)
 
-headers = {
-    'User-Agent': 'JstrisStatsBot'}
+with open('header.txt') as h:
+    header = h.readline()
+    headers = {
+        'User-Agent': header}
 
 
 # Returns fetched_and_cached_replays containing entries of following dict:
@@ -19,7 +21,6 @@ headers = {
 # "attack":94,"rep":"3","pcs":133,"players":4,"r1v1":0,"pos":1,"vs":"Torp","gtime":"2021-11-08 07:56:19"}
 
 #  If username doesn't exist or there are no games, error will be logged into error_message
-
 
 class UserLiveGames:
 

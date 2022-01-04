@@ -1,9 +1,5 @@
-import decimal
-from decimal import Decimal
-
 from collections import OrderedDict
 
-import ijson
 import json
 
 import datetime
@@ -108,10 +104,10 @@ class CacheInit:
             final_date = await jstrisfunctions.new_first_last_date(list_of_dates)
             final_date = final_date[1]
 
-            self.user_dict[self.username]['vs'] = {'date': final_date, 'replays': self.fetched_and_cached_replays,
+            self.user_dict['vs'] = {'date': final_date, 'replays': self.fetched_and_cached_replays,
                                                    'date accessed': DateInit.datetime_to_str_naive(
                                                        datetime.datetime.now(tz=pytz.timezone('CET')))[:-7]}
-            await self.append_file(self.user_dict)
+            await self.store_player_stats(self.user_dict)
 
             self.returned_replays = await self.vs_period_filter()
             await self.vs_stats_producer()
@@ -144,10 +140,10 @@ class CacheInit:
             final_date = max([jstrisfunctions.DateInit.str_to_datetime(i) for i in list_of_dates])
             final_date = DateInit.datetime_to_str_naive(final_date)
 
-            self.user_dict[self.username][await self.params_to_str_key(self.params)] = \
+            self.user_dict[await self.params_to_str_key(self.params)] = \
                 {'date': final_date, 'replays': self.fetched_and_cached_replays,
                  'date accessed': DateInit.datetime_to_str_naive(datetime.datetime.now(tz=pytz.timezone('CET')))[:-7]}
-            await self.append_file(self.user_dict)
+            await self.store_player_stats(self.user_dict)
             self.returned_replays = await self.indiv_period_filter()
             await self.indiv_stats_producer()
 
@@ -158,22 +154,24 @@ class CacheInit:
         """
         self.cached_date = ''
         self.cached_replays = []
-        self.user_dict = {self.username: {self.gamemode_key: {'date': '', 'replays': []}}}
+        self.user_dict = {self.gamemode_key: {'date': '', 'replays': []}}
 
         logger.info(f'Beginning fetching {self.username}')
+
         async with self.lock:
-            async with aiofiles.open('stats.json', 'r') as f:
-                async for player in ijson.items_async(f, 'item'):
-                    if self.username in player.keys():
-                        self.user_dict = player
+            if os.path.exists(f"playerstats/{self.username}.json"):
+                async with aiofiles.open(f"playerstats/{self.username}.json", 'r') as f:
+                    # async for player_stats in ijson.items_async(f, ''):
+                    player_stats = json.loads(await f.read())
+                    self.user_dict = player_stats
 
         logger.info(f'Ending fetching {self.username}')
 
         self.user_dict = await self.replace_decimals(self.user_dict)
 
-        if self.gamemode_key in self.user_dict[self.username].keys():
-            self.cached_date = self.user_dict[self.username][self.gamemode_key]['date']
-            self.cached_replays = self.user_dict[self.username][self.gamemode_key]['replays']
+        if self.gamemode_key in self.user_dict.keys():
+            self.cached_date = self.user_dict[self.gamemode_key]['date']
+            self.cached_replays = self.user_dict[self.gamemode_key]['replays']
 
     async def vs_reduce_fetched_stats(self) -> None:
         """
@@ -268,44 +266,17 @@ class CacheInit:
             new_dict.update(j)
             self.returned_replays[i] = new_dict
 
-    async def append_file(self, new_username_stats: dict) -> None:
-        """
-        Parses through old stats.json and appends all other users into new_stats.json.
-        Adds new_user at the end
-        :param new_username_stats: dictionary of modified user
-        :return: stats.json
-        """
-        logger.info(f'Beginning appending {self.username}')
-        async with self.lock:
+    async def store_player_stats(self, new_username_stats: dict) -> None:
+        logger.info(f'Starting storing {self.username} stats {self.username}')
 
-            async with aiofiles.open('stats.json', 'r') as f, aiofiles.open('new_stats.json', 'w') as g:
-                await g.write('[')
-                try:
-                    async for player in ijson.items_async(f, 'item'):
-                        if self.username in player.keys():
-                            continue
+        async with aiofiles.open(f"playerstats/{self.username}.json", 'w') as f:
+            float_new_username_stats = await self.replace_decimals(new_username_stats)
+            await f.write(json.dumps(float_new_username_stats))
 
-                        float_player = await self.replace_decimals(player)
-
-                        # json.dump(float_player, g, indent=1)
-                        await g.write(json.dumps(float_player))
-                        await g.write(',')
-
-                except ijson.common.IncompleteJSONError:
-                    print('Empty stats.json file')
-
-            async with aiofiles.open("new_stats.json", "a") as g:
-                float_new_username_stats = await self.replace_decimals(new_username_stats)
-                await g.write(json.dumps(float_new_username_stats))
-                # json.dump(float_new_username_stats, g, indent=1)
-                await g.write(']')
-
-            os.remove('stats.json')
-            os.rename("new_stats.json", 'stats.json')
-        logger.info(f'Ending appending {self.username}')
+        logger.info(f'Ending storing {self.username} stats {self.username}')
 
     @staticmethod
-    async def replace_decimals(obj: dict):
+    async def replace_decimals(obj):
         """
         Replaces objects with Decimal class with floats (this undoes ijson turning all floats into Decimal)
         :param obj: nested dictionary/list
@@ -320,9 +291,12 @@ class CacheInit:
             for k in obj.keys():
                 obj[k] = await CacheInit.replace_decimals(obj[k])
             return obj
-        elif isinstance(obj, decimal.Decimal) or isinstance(obj, Decimal):
+        # Typing errors and duplicate replays can happen if ints are turned into floats
+        try:
+            if obj is None or type(obj) in (int, str):
+                raise ValueError
             return float(obj)
-        else:
+        except ValueError:
             return obj
 
     @staticmethod
@@ -404,154 +378,54 @@ class CacheInit:
         return f'{self.error_message}'
 
 
-def check_stats_json_exists() -> None:
-    """
-    Creates stats.json if needed; cache init doesn't work if there isn't at least an empty list inside of the json
-    :return:
-    """
-    if not os.path.exists("stats.json"):
-        with open('stats.json', 'w') as f:
-            f.write('[]')
-
-
 async def prune_unused_stats(lock: asyncio.Lock) -> None:
     """
-    Deletes lists of replays who have been last accessed two weeks ago
+    Gets rid of gamemode stats that have not been accessed within the last two weeks
+
+    :param lock: asyncio.Lock
     :return:
     """
-    logging.info('Beginning pruning')
     async with lock:
-        try:
-            async with aiofiles.open('stats.json', 'r') as f, aiofiles.open('new_stats.json', 'w') as g:
-                await g.write('[')
-                async for item in ijson.items_async(f, 'item'):
-                    for username in item:
-                        username_dict = {username: {}}
-                        for gamemode in item[username]:
-                            for attribute in item[username][gamemode]:
-                                # Filters all gamemodes if "date accessed" is less than 14 days
+        list_of_filenames = os.listdir('playerstats')
+        for file in list_of_filenames:
+            new_player_stats = {}
 
-                                if attribute == 'date accessed':
-                                    if datetime.datetime.now(tz=pytz.timezone('CET'))\
-                                            - jstrisfunctions.DateInit.str_to_datetime(item[username][gamemode][attribute]
-                                                                                       ) < datetime.timedelta(days=14):
-                                        username_dict[username][gamemode] = item[username][gamemode]
+            # Checks each gamemode's dates and stores acceptable gamemode stats to new_player_stats
+            async with aiofiles.open(f'playerstats/{file}', 'r') as f:
+                # async for player_stats in ijson.items_async(f, ''):
+                player_stats = json.loads(await f.read())
+                for gamemode in player_stats:
+                    gamemode_date = player_stats[gamemode]['date accessed']
+                    if datetime.datetime.now(tz=pytz.timezone('CET')) - jstrisfunctions.DateInit.str_to_datetime(gamemode_date) < datetime.timedelta(days=14):
+                        new_player_stats[gamemode] = player_stats[gamemode]
 
-                        if username_dict[username]:
-                            logging.info(f"Trying to dump: {username}")
-                            float_gamemode = await CacheInit.replace_decimals(username_dict)
-                            # json.dump(float_gamemode, g, indent=1)
-                            await g.write(json.dumps(float_gamemode))
-                            await g.write(',')
-
-            # Handles end brackets to maintain complete json formatting; deletes extra comma as well to preserve json
-
-            with open('new_stats.json', 'rb+') as h:
-                h.seek(-1, os.SEEK_END)
-                curr_var = h.read()
-                if curr_var == b",":
-                    h.seek(-1, os.SEEK_END)
-                    h.truncate()
-            with open('new_stats.json', 'a') as h:
-                h.write(']')
-
-        except Exception as e:
-            logging.warning('Pruning failed')
-            logging.warning(e)
-
-            # Creates new cache file just in case; will erase all data though
-            with open('new_stats.json', 'w') as f:
-                f.write('[]')
-
-        os.remove('stats.json')
-        os.rename("new_stats.json", 'stats.json')
+            # Writes new_player_stats
+            async with aiofiles.open(f'playerstats/{file}', 'w') as f:
+                new_player_stats = await CacheInit.replace_decimals(new_player_stats)
+                await f.write(json.dumps(new_player_stats))
 
 
 async def prune_user(lock: asyncio.Lock, prune_username: str) -> None:
-    logging.info('Beginning pruning')
+    """
+    Removes a player from the database
+    :param lock: asyncio.Lock
+    :param prune_username: str
+    :return:
+    """
+    username = prune_username.lower()
     async with lock:
-        try:
-            async with aiofiles.open('stats.json', 'r') as f, aiofiles.open('new_stats.json', 'w') as g:
-                await g.write('[')
-                async for item in ijson.items_async(f, 'item'):
-                    for username in item:
-                        username_dict = {username: {}}
-                        if prune_username != username:
-                            username_dict[username] = item[username]
-
-                        if username_dict[username]:
-                            logging.info(f"Trying to dump: {username}")
-                            float_gamemode = await CacheInit.replace_decimals(username_dict)
-                            # json.dump(float_gamemode, g, indent=1)
-                            await g.write(json.dumps(float_gamemode))
-                            await g.write(',')
-
-            # Handles end brackets to maintain complete json formatting; deletes extra comma as well to preserve json
-
-            with open('new_stats.json', 'rb+') as h:
-                h.seek(-1, os.SEEK_END)
-                curr_var = h.read()
-                if curr_var == b",":
-                    h.seek(-1, os.SEEK_END)
-                    h.truncate()
-            with open('new_stats.json', 'a') as h:
-                h.write(']')
-
-        except Exception as e:
-            logging.warning('Pruning failed')
-            logging.warning(e)
-
-            # Creates new cache file just in case; will erase all data though
-            with open('new_stats.json', 'w') as f:
-                f.write('[]')
-
-        os.remove('stats.json')
-        os.rename("new_stats.json", 'stats.json')
+        if os.path.exists(f'playerstats/{username}.json'):
+            os.remove(f'playerstats/{username}.json')
 
 if __name__ == "__main__":
 
-    async def foo():
-        curr_lock = asyncio.Lock()
-        game_stats = CacheInit('truebulge', jstrisfunctions.VersusParameterInit(('June 25, 2019', 'day')), curr_lock)
-        await game_stats.fetch_all_games()
-
-        # dates = jstrisfunctions.opponents_matchups(game_stats.returned_replays)
-        # dates = dates['reminder']
-        # game_stats = CacheInit('reminder', jstrisfunctions.VersusParameterInit((dates['min_time'], dates['max_time'])))
-        # await game_stats.fetch_all_games()
-        #
-        # game_stats = CacheInit('truebulge', jstrisfunctions.IndivParameterInit(('cheese', 'day')))
-        # await game_stats.fetch_all_games()
-
-    # import cProfile
-    # import pstats
-    #
-    # with cProfile.Profile() as pr:
-    #     loop = asyncio.get_event_loop()
-    #     loop.run_until_complete(asyncio.gather(
-    #         foo()
-    #     ))
-    #
-    # stats = pstats.Stats(pr)
-    # stats.sort_stats(pstats.SortKey.TIME)
-    # stats.print_stats()
-
     import tracemalloc
+
+    curr_lock = asyncio.Lock()
 
     tracemalloc.start(10)
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(foo()))
-
-    snapshot = tracemalloc.take_snapshot()
-
-    top_stats = snapshot.statistics('lineno')
-
-    print("[ Top 10 ]")
-    for stat in top_stats[:10]:
-        print(stat)
-
-    # await ggame_Stats.fetch_all_games()
-
-    # k = jstrisfunctions.DateInit('5 months', 'day')
-    # j = jstrisuser.UserLiveGames('reminder', first_date=k.first, last_date=k.last)
-    # print(j.first_date_str, j.last_date_str)
+    params = jstrisfunctions.IndivParameterInit(('sprint40', 'week'))
+    thing = CacheInit(lock=curr_lock, username="vince_hd", params=params)
+    loop.run_until_complete(asyncio.gather(thing.fetch_all_games()))
+    print(len(thing.returned_replays))

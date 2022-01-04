@@ -582,6 +582,9 @@ async def totalgametime(ctx, username: str) -> None:
 
 if __name__ == "__main__":
 
+    if not os.path.exists('playerstats'):
+      os.mkdir('playerstats')
+
     clear_unaccessed_replays.start()
 
     BadgerBot.add_cog(GeneralMaintenance(BadgerBot))

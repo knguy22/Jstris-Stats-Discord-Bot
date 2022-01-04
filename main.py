@@ -1,3 +1,5 @@
+import os
+
 import discord
 from discord.ext import commands, tasks
 
@@ -460,7 +462,7 @@ class VsCommands(commands.Cog):
             await ctx.send(ctx.author.mention)
             await ctx.send(f'Your available replays of {username} vs {opponent} are:', file=discord.File(file, f'{username} vs {opponent}.txt'))
 
-
+        os.remove("versusmatchupreplays.txt")
 
     @staticmethod
     async def vs_matchup_embed(ctx, username: str, opponent: str, list_of_opponents: dict) -> [None, discord.Embed]:
@@ -580,7 +582,6 @@ async def totalgametime(ctx, username: str) -> None:
 
 if __name__ == "__main__":
 
-    cache.check_stats_json_exists()
     clear_unaccessed_replays.start()
 
     BadgerBot.add_cog(GeneralMaintenance(BadgerBot))
@@ -590,8 +591,3 @@ if __name__ == "__main__":
     with open('token.txt', 'r') as r:
         token = r.readline()
         BadgerBot.run(token)
-
-
-# To do list
-# indiv stats for apm and such
-# Versus param init

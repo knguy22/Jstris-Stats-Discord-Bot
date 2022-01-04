@@ -1,4 +1,4 @@
-# JstrisAPIDiscordBot
+# Jstris Stats Discord Bot
 
 Discord bot made to quickly gather player stats from jstris.jezevec10.com. This bot can analyze both singleplayer and versus games. For details about each command, see the following commands document.
 

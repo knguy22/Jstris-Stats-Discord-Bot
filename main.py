@@ -279,6 +279,7 @@ class VsCommands(commands.Cog):
         apm_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'apm')
         spm_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'spm')
         pps_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'pps')
+        ren_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'ren')
         weight_apm = round(jstrisfunctions.live_games_weighted_avg(searched_games.returned_replays, param_init.offset,
                                                                    'attack') * 60, 2)
         weight_spm = round(jstrisfunctions.live_games_weighted_avg(searched_games.returned_replays, param_init.offset,
@@ -298,6 +299,7 @@ class VsCommands(commands.Cog):
         embed.add_field(name="**apm (weighted):**", value=str(weight_apm), inline=True)
         embed.add_field(name="**spm (weighted):**", value=str(weight_spm), inline=True)
         embed.add_field(name="**pps (weighted):**", value=str(weight_pps), inline=True)
+        embed.add_field(name="**max combo:**", value=str(ren_avg), inline=True)
         embed.add_field(name="**time (seconds):**", value=str(time_avg), inline=True)
         embed.add_field(name="**final position:**", value=str(pos_avg), inline=True)
         embed.add_field(name="**players:**", value=str(players_avg), inline=True)
@@ -481,6 +483,7 @@ class VsCommands(commands.Cog):
             embed.add_field(name='**apm (weighted):**', value=list_of_opponents[opponent]["wapm"], inline=True)
             embed.add_field(name='**spm (weighted):**', value=list_of_opponents[opponent]["wspm"], inline=True)
             embed.add_field(name='**pps (weighted):**', value=list_of_opponents[opponent]["wpps"], inline=True)
+            embed.add_field(name='**max combo:**', value=list_of_opponents[opponent]["ren"], inline=False)
             embed.add_field(name='**time (seconds):**', value=
                             round(list_of_opponents[opponent]["time_sum"] / list_of_opponents[opponent]['games'], 2),
                             inline=True)

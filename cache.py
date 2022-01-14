@@ -23,7 +23,7 @@ LOOP = asyncio.get_event_loop()
 
 
 class CacheInit:
-    def __init__(self, username: str, params: [jstrisfunctions.DateInit, jstrisfunctions.IndivParameterInit],
+    def __init__(self, username: str, params: [jstrisfunctions.VersusParameterInit, jstrisfunctions.IndivParameterInit],
                  lock: asyncio.Lock):
         self.username = username.lower()
         self.params = params

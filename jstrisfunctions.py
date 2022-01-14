@@ -580,7 +580,7 @@ async def opponents_matchups(list_of_games: list, max_games: int) -> dict:
             # Initialize new opponent name
             if player_name not in all_opponents:
                 all_opponents[player_name] = {"games": 1, "won": 0, "apm": 0, "spm": 0, "pps": 0,
-                                              'wapm': 0, 'wspm': 0, 'wpps': 0, 'time_sum': 0,
+                                              'wapm': 0, 'wspm': 0, 'wpps': 0, 'time_sum': 0, 'ren': 0,
                                               'min_time': "",
                                               'max_time': ""}
             elif all_opponents[player_name]['games'] == max_games:
@@ -598,6 +598,7 @@ async def opponents_matchups(list_of_games: list, max_games: int) -> dict:
             all_opponents[player_name]['wspm'] += game['sent']
             all_opponents[player_name]['wpps'] += game['pcs']
             all_opponents[player_name]['time_sum'] += game['gametime']
+            all_opponents[player_name]['ren'] += game['ren']
 
     # Finding min and max time for each opponent
 
@@ -625,6 +626,7 @@ async def opponents_matchups(list_of_games: list, max_games: int) -> dict:
         all_opponents[opp]['wapm'] = round(all_opponents[opp]['wapm'] / all_opponents[opp]['time_sum'] * 60, 2)
         all_opponents[opp]['wspm'] = round(all_opponents[opp]['wspm'] / all_opponents[opp]['time_sum'] * 60, 2)
         all_opponents[opp]['wpps'] = round(all_opponents[opp]['wpps'] / all_opponents[opp]['time_sum'], 2)
+        all_opponents[opp]['ren'] = round(all_opponents[opp]['ren'] / all_opponents[opp]['games'], 2)
 
     # return all_opponents
     return dict(sorted(all_opponents.items(), key=lambda x: x[1]['games'], reverse=True))

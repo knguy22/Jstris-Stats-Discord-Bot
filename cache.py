@@ -19,7 +19,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 logger = logging.getLogger(__name__)
-LOOP = asyncio.get_event_loop()
 
 
 class CacheInit:
@@ -49,6 +48,7 @@ class CacheInit:
         All replays ever filtered out by period; all replays ever are stored into stats.json
         """
 
+        # Gamemode key tells which replays to check (ie cheese or vs or ultra)
         if isinstance(self.params, jstrisfunctions.VersusParameterInit):
             self.gamemode_key = 'vs'
         elif isinstance(self.params, jstrisfunctions.IndivParameterInit):
@@ -57,24 +57,26 @@ class CacheInit:
         logging.info(self.params)
         logging.info(self.gamemode_key)
 
-        # Versus
+        # Choose which gamemode or replays you want to fetch
         if type(self.params) == jstrisfunctions.VersusParameterInit:
-            await self.fetch_versus()
-
-        # Indiv gamemodes
+            await self.fetch_versus_replays()
         elif type(self.params) == jstrisfunctions.IndivParameterInit:
-            await self.fetch_indiv()
-
+            await self.fetch_indiv_replays()
         else:
             self.has_error = True
             self.error_message = f'Not valid param type: {self.params}, {type(self.params)}'
 
+        # Final check if replays are empty
         if await self.not_has_games(self.returned_replays):
             self.has_error = True
             self.error_message = f"Error: {self.username} has no played games"
 
-    async def fetch_versus(self) -> None:
-        await self.fetch_user()
+    async def fetch_versus_replays(self) -> None:
+        """
+        Fetches versus replays, stored in cache and not yet stored in cache
+        :return:
+        """
+        await self.fetch_replays_from_cache()
 
         if not self.cached_date:
             first_date = '0001-01-01 00:00:01'
@@ -82,57 +84,74 @@ class CacheInit:
             first_date = self.cached_date
         last_date = '9999-01-01 00:00:00'
 
+        # Gathers uncached replays from jstris
+        LOOP = asyncio.get_event_loop()
         self.fetched_user_class = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                              UserLiveGames, self.username, 100000000000,
                                                              first_date, last_date)
         self.fetched_replays = self.fetched_user_class.all_replays
 
-        await self.vs_reduce_fetched_stats()
-        # Ordering matters here; fetched replays must be before cached replays
+        # Processes replays; note: fetched_replays must be added before cached_replays in order to maintain proper
+        # date ordering
+        await self.reduce_fetched_replays_vs()
         self.fetched_and_cached_replays = self.fetched_replays + self.cached_replays
         self.fetched_and_cached_replays = await self.duplicate_replay_deleter(self.fetched_and_cached_replays)
 
+        # Checks for problems or errors with all replays
         if self.fetched_user_class.has_error:
             self.has_error = True
             self.error_message = self.fetched_user_class.error_message
         elif await self.not_has_games(self.fetched_and_cached_replays):
             self.has_error = True
             self.error_message = f"Error: {self.username} has no played games"
-        else:
+
+        if not self.has_error:
             list_of_dates = [i['gtime'] for i in self.fetched_and_cached_replays]
             final_date = await jstrisfunctions.new_first_last_date(list_of_dates)
+
+            # Checks if the versus filter could not find a first or last date
             if not final_date:
                 self.has_error = True
                 self.error_message = f"Error: {self.username} has no valid games"
+                return None
 
-        if not self.has_error:
-
+            # Stores all replays into the cache
             final_date = final_date[1]
-
             self.user_dict['vs'] = {'date': final_date, 'replays': self.fetched_and_cached_replays,
                                                    'date accessed': DateInit.datetime_to_str_naive(
                                                        datetime.datetime.now(tz=pytz.timezone('CET')))[:-7]}
             await self.store_player_stats(self.user_dict)
 
-            self.returned_replays = await self.vs_period_filter()
-            await self.vs_stats_producer()
+            # Returns fetched replays
+            self.returned_replays = await self.filter_period_vs()
+            await self.produce_vs_stats()
 
-    async def fetch_indiv(self) -> None:
-        await self.fetch_user()
+    async def fetch_indiv_replays(self) -> None:
+        """
+        Fetches single player replays, stored in cache or not yet stored in cache
+        :return:
+        """
+        await self.fetch_replays_from_cache()
+
         if not self.cached_date:
             first_date = '0001-01-01 00:00:01'
         else:
             first_date = self.cached_date
         last_date = '9999-01-01 00:00:00'
 
+        # Gathers uncached replays from jstris
+        LOOP = asyncio.get_event_loop()
         self.fetched_user_class = await LOOP.run_in_executor(ThreadPoolExecutor(), UserIndivGames, self.username,
                                                              self.params.game, self.params.mode, first_date,
                                                              last_date)
         self.fetched_replays = self.fetched_user_class.all_replays
-        await self.indiv_reduce_fetched_stats()
+
+        # Processes requested replays and merges with cached replays
+        await self.reduced_fetched_replays_indiv()
         self.fetched_and_cached_replays = self.cached_replays + self.fetched_replays
         self.fetched_and_cached_replays = await self.duplicate_replay_deleter(self.fetched_and_cached_replays)
 
+        # Checks for problems and errors
         if self.fetched_user_class.has_error:
             self.has_error = True
             self.error_message = self.fetched_user_class.error_message
@@ -140,6 +159,7 @@ class CacheInit:
             self.has_error = True
             self.error_message = f"Error: {self.username} has no played games"
 
+        # Stores all replays into cache
         if not self.has_error:
             list_of_dates = [i['date (CET)'] for i in self.fetched_and_cached_replays]
             final_date = max([jstrisfunctions.DateInit.str_to_datetime(i) for i in list_of_dates])
@@ -149,36 +169,40 @@ class CacheInit:
                 {'date': final_date, 'replays': self.fetched_and_cached_replays,
                  'date accessed': DateInit.datetime_to_str_naive(datetime.datetime.now(tz=pytz.timezone('CET')))[:-7]}
             await self.store_player_stats(self.user_dict)
-            self.returned_replays = await self.indiv_period_filter()
-            await self.indiv_stats_producer()
 
-    async def fetch_user(self) -> None:
+            # Returns replays
+            self.returned_replays = await self.filter_period_indiv()
+            await self.produce_indiv_stats()
+
+    async def fetch_replays_from_cache(self) -> None:
         """
         Dictionary containing all gamemodes of user; date of last replay; all replays stored of specific gamemode
         :return: self.user_dict, self.cached_date, self.cached_replays
         """
+
+        # Initializes json later when replays are stored back into cache
         self.cached_date = ''
         self.cached_replays = []
         self.user_dict = {self.gamemode_key: {'date': '', 'replays': []}}
 
         logger.info(f'Beginning fetching {self.username}')
 
+        # Grabs desired gamemode replays from {username}.json
         async with self.lock:
             if os.path.exists(f"playerstats/{self.username}.json"):
                 async with aiofiles.open(f"playerstats/{self.username}.json", 'r') as f:
                     # async for player_stats in ijson.items_async(f, ''):
                     player_stats = json.loads(await f.read())
                     self.user_dict = player_stats
-
         logger.info(f'Ending fetching {self.username}')
 
+        # Processes fetched replays
         self.user_dict = await self.replace_decimals(self.user_dict)
-
         if self.gamemode_key in self.user_dict.keys():
             self.cached_date = self.user_dict[self.gamemode_key]['date']
             self.cached_replays = self.user_dict[self.gamemode_key]['replays']
 
-    async def vs_reduce_fetched_stats(self) -> None:
+    async def reduce_fetched_replays_vs(self) -> None:
         """
         :return: self.fetched_replays: skim off unneeded stats to save memory
         """
@@ -193,7 +217,7 @@ class CacheInit:
 
         self.fetched_replays = reduced_all_stats
 
-    async def vs_period_filter(self) -> list:
+    async def filter_period_vs(self) -> list:
         """
         :return: new_list_of_games
         Filtered by first date and last date
@@ -204,6 +228,12 @@ class CacheInit:
 
         first_date = jstrisfunctions.DateInit.str_to_datetime(self.params.first_date)
         last_date = jstrisfunctions.DateInit.str_to_datetime(self.params.last_date)
+
+        # Jstris will sometimes store versus replays with the wrong dates, which causes issues when trying to find
+        # versus replays in a specific time period. Since jstris most often stores replays with a date wrongly far off
+        # into the past, there being a replay whose date is above the earliest date of a given time period will return
+        # all replays with game ID above (or stored after) that first replay because it is not likely that the replay's
+        # true date is later than the stored replay's date
 
         for i, j in enumerate(self.fetched_and_cached_replays):
             curr_date = jstrisfunctions.DateInit.str_to_datetime(j['gtime'])
@@ -222,7 +252,7 @@ class CacheInit:
 
         return new_list_of_games
 
-    async def vs_stats_producer(self) -> None:
+    async def produce_vs_stats(self) -> None:
 
         """
         Recalculate useful stats like apm, spm, pps
@@ -234,7 +264,7 @@ class CacheInit:
             j['pps'] = round(j['pcs'] / j['gametime'], 2)
             self.returned_replays[i] = j
 
-    async def indiv_reduce_fetched_stats(self) -> None:
+    async def reduced_fetched_replays_indiv(self) -> None:
         """
         Reduces unnecessary statistics/attributes
         :return: self.fetched_replays
@@ -246,7 +276,7 @@ class CacheInit:
 
         self.fetched_replays = reduced_all_stats
 
-    async def indiv_period_filter(self) -> list:
+    async def filter_period_indiv(self) -> list:
         """
         Filters games by first and last date
         :return: self.fetched_and_cached_replays
@@ -261,7 +291,7 @@ class CacheInit:
 
         return new_list_of_games
 
-    async def indiv_stats_producer(self) -> None:
+    async def produce_indiv_stats(self) -> None:
         """
         Re-adds username to each replay
         :return: self.returned_replays
@@ -296,7 +326,7 @@ class CacheInit:
             for k in obj.keys():
                 obj[k] = await CacheInit.replace_decimals(obj[k])
             return obj
-        # Typing errors and duplicate replays can happen if ints are turned into floats
+        # Replaces decimal type without replacing ints or strs
         try:
             if obj is None or type(obj) in (int, str):
                 raise ValueError
@@ -423,6 +453,5 @@ async def prune_user(lock: asyncio.Lock, prune_username: str) -> None:
             os.remove(f'playerstats/{username}.json')
 
 if __name__ == "__main__":
-
     pass
 

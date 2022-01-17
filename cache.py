@@ -98,10 +98,15 @@ class CacheInit:
         elif await self.not_has_games(self.fetched_and_cached_replays):
             self.has_error = True
             self.error_message = f"Error: {self.username} has no played games"
-
-        if not self.has_error:
+        else:
             list_of_dates = [i['gtime'] for i in self.fetched_and_cached_replays]
             final_date = await jstrisfunctions.new_first_last_date(list_of_dates)
+            if not final_date:
+                self.has_error = True
+                self.error_message = f"Error: {self.username} has no valid games"
+
+        if not self.has_error:
+
             final_date = final_date[1]
 
             self.user_dict['vs'] = {'date': final_date, 'replays': self.fetched_and_cached_replays,
@@ -419,13 +424,5 @@ async def prune_user(lock: asyncio.Lock, prune_username: str) -> None:
 
 if __name__ == "__main__":
 
-    import tracemalloc
+    pass
 
-    curr_lock = asyncio.Lock()
-
-    tracemalloc.start(10)
-    loop = asyncio.get_event_loop()
-    params = jstrisfunctions.IndivParameterInit(('sprint40', 'week'))
-    thing = CacheInit(lock=curr_lock, username="vince_hd", params=params)
-    loop.run_until_complete(asyncio.gather(thing.fetch_all_games()))
-    print(len(thing.returned_replays))

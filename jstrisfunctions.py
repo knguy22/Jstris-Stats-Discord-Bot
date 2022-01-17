@@ -510,7 +510,7 @@ def first_last_date(list_of_dates: list) -> tuple:
     return min_time, max_time
 
 
-async def new_first_last_date(list_of_dates: list) -> tuple:
+async def new_first_last_date(list_of_dates: list) -> (tuple, bool):
 
     # Higher indices now mean ascending order
     # Skip pruning if there are only two replays
@@ -524,6 +524,9 @@ async def new_first_last_date(list_of_dates: list) -> tuple:
         new_list_of_dates = []
 
         for j, k in enumerate(list_of_dates):
+
+            if len(list_of_dates) == 0 or len(list_of_dates) == 1:
+                return False
 
             # Checks last index of the list; ie the greatest date
             if j + 1 == len(list_of_dates):

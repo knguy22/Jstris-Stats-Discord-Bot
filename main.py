@@ -568,14 +568,15 @@ async def totalgametime(ctx, username: str) -> None:
         if gamemode == 'ultra':
             gamemode_total_time += 120 * len(curr_gamemode.returned_replays)
 
-        embed.add_field(name=f'**{gamemode}:**', value=jstrishtml.seconds_to_clock(gamemode_total_time), inline=True)
+        embed.add_field(name=f'**{gamemode}:**', value=jstrishtml.seconds_to_timestr(gamemode_total_time), inline=True)
 
         total_time += gamemode_total_time
 
-    total_time = jstrishtml.seconds_to_clock(total_time)
+    total_time = jstrishtml.seconds_to_timestr(total_time)
     embed.add_field(name=f'**total time:**', value=total_time, inline=True)
 
-    embed.set_footer(text='Total time does not count uncompleted replays. Due to how jstris stores replays, only the '
+    embed.set_footer(text='Units are hours, minutes, and seconds.'
+                          'Total time does not count uncompleted replays. Due to how jstris stores replays, only the '
                           'top 200 pcmode and 20tsd replays will be counted.')
 
     await GeneralMaintenance.num_processes_finish()

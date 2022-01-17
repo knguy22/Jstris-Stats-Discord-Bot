@@ -408,7 +408,7 @@ def average_(list_of_runs: list, my_param: str) -> [float, str]:
         stat_average += i[my_param]
 
     if my_param == "seconds":
-        return jstrishtml.seconds_to_clock(round(stat_average/len(list_of_runs), 2))
+        return jstrishtml.seconds_to_timestr(round(stat_average / len(list_of_runs), 2))
     return round(stat_average/len(list_of_runs), 2)
 
 

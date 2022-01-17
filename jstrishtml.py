@@ -1,5 +1,3 @@
-import datetime
-
 # Jstris html data conversions
 
 
@@ -193,6 +191,29 @@ def clock_to_seconds(s: str) -> float:
     return round(60 * minutes + seconds + milliseconds, 3)
 
 
-def seconds_to_clock(s: float) -> str:
-    return str(datetime.timedelta(seconds=s))[:-3]
+def seconds_to_timestr(s: float) -> str:
+    m, s = divmod(s, 60)
+    h, m = divmod(m, 60)
+    s = round(s, 3)
+    m = int(m)
+    h = int(h)
 
+    s = str(s)
+    if float(s) < 10:
+        s = "0" + s
+    # Adds 0 to end to add thousandth place (Ex: 0.22 -> 0.220)
+    if len(s) == 5:
+        s += '0'
+
+    m = str(m)
+    if int(m) < 10:
+        m = "0" + m
+
+    h = str(h)
+    if int(h) < 10:
+        h = "0" + h
+
+    return f'{h} hours, {m} minutes, {s} seconds'
+
+if __name__ == "__main__":
+    print(seconds_to_timestr(3690))

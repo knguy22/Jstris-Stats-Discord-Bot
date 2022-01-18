@@ -9,7 +9,7 @@ import pytz
 import logging
 logger = logging.getLogger(__name__)
 
-with open('header.txt') as h:
+with open('header.txt', 'r') as h:
     header = h.readline()
     header = header.replace('\n', '')
     headers = {
@@ -344,12 +344,15 @@ class UserIndivGames:
         c = -1
         while len(self.page_request) - 1 > c:
             c += 1
-            if "<td><strong>" in self.page_request[c]:
-                if "<td><strong>" in self.page_request[c - 1]:
-                    continue
+            if "<td><strong>" in self.page_request[c] and self.username in self.page_request[c - 2].lower():
+
+                # d is an offset for diff stats indices once we find the right c;
                 d = 1
+                # c - 2 gets username, which is two indices before the first <td-strong>
                 index = c - 2
                 current_dict = {}
+
+                # Loops through each data_criteria to scrape data
                 for criteria in self.data_criteria:
                     if self.data_criteria[criteria] == 'userstring':
                         current_dict[criteria] = user_string(self.page_request[index])
@@ -366,6 +369,7 @@ class UserIndivGames:
                     elif self.data_criteria[criteria] == 'float':
                         current_dict[criteria] = my_float(self.page_request[index])
 
+                    # Magic numbers to deal with the html
                     if d == 1 or d == len(self.data_criteria) - 1:
                         index += 2
                     else:
@@ -416,7 +420,7 @@ class UserIndivGames:
                                   "replay": "replaystring"}
 
         elif self.game == '8':
-            self.data_criteria = {"username": "userstring", "pcs": "tdint", "clock": "clockstring",
+            self.data_criteria = {"username": "userstring", "pcs": "tdint", "time": "timestring",
                                   "blocks": "int", "pps": "float", "finesse": "int",
                                   "date": "string", "replay": "replaystring"}
 

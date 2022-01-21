@@ -549,16 +549,12 @@ class UserIndivGames:
         # Using frozen sets was the fastest way I could think of to delete duplicate replays while maintaining ordering
         # Using a normal for loop is much slower
 
-        frozen_set_list = []
-        for i in self.all_replays:
-            frozen_set_list.append(frozenset(i.items()))
+        frozen_set_list = [frozenset(i.items()) for i in self.all_replays]
 
         ordered_dict_list = OrderedDict.fromkeys(frozen_set_list)
         ordered_dict_list = list(ordered_dict_list)
 
-        new_list = []
-        for i in ordered_dict_list:
-            new_list.append(dict(i))
+        new_list = [dict(i) for i in ordered_dict_list]
 
         self.all_replays = new_list
 

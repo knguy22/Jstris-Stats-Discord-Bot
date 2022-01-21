@@ -5,6 +5,7 @@ import jstrisfunctions
 from jstrishtml import *
 import datetime
 import pytz
+from collections import OrderedDict
 
 import logging
 logger = logging.getLogger(__name__)
@@ -542,19 +543,24 @@ class UserIndivGames:
 
     def duplicate_replay_deleter(self) -> None:
         """
-
-        :return: fetched_and_cached_replays with duplicate replays deleted
+        Deletes duplicate replays
         """
 
-        if len(self.all_replays) == 1:
-            return None
+        # Using frozen sets was the fastest way I could think of to delete duplicate replays while maintaining ordering
+        # Using a normal for loop is much slower
 
-        c = 0
-        while c < len(self.all_replays):
-            if self.all_replays[c] == self.all_replays[c - 1]:
-                self.all_replays.pop(c)
-                c -= 1
-            c += 1
+        frozen_set_list = []
+        for i in self.all_replays:
+            frozen_set_list.append(frozenset(i.items()))
+
+        ordered_dict_list = OrderedDict.fromkeys(frozen_set_list)
+        ordered_dict_list = list(ordered_dict_list)
+
+        new_list = []
+        for i in ordered_dict_list:
+            new_list.append(dict(i))
+
+        self.all_replays = new_list
 
 
 if __name__ == "__main__":

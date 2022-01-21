@@ -231,21 +231,24 @@ class IndivParameterInit:
         logging.info(self)
 
     def param_init(self, my_param: str, game: str) -> None:
-        if game in ('ultra', 'Ultra') and my_param in ("ppb", 'PPB', 'Ppb'):
+        my_param = my_param.lower()
+        if game == 'ultra' and my_param == 'ppb':
             self.param = 'ppb'
-        if game in ('ultra', 'Ultra') and my_param in ("score", 'Score'):
+        if game == 'ultra' and my_param == 'score':
             self.param = 'score'
-        if game in ("pcmode", "PCmode") and my_param in ('pcs', 'PCS', 'PC', 'Pc', 'Pcs', 'pc'):
+        if game == 'pcmode' and my_param in ('pcs', 'pc'):
             self.param = 'pcs'
-        if game in ("20tsd", "20TSD") and my_param in ('tsds', 'TSDS', 'Tsds'):
+        if game == '20tsd' and my_param == 'tsds':
             self.param = 'tsds'
-        if my_param in ('pps', 'PPS', 'Pps'):
+        if game == '20tsd' and my_param == '20tsd time':
+            self.param = '20tsd time'
+        if my_param == 'pps':
             self.param = 'pps'
-        if my_param in ('blocks', 'Blocks'):
+        if my_param == 'blocks':
             self.param = 'blocks'
-        if my_param in ('finesse', 'Finesse'):
+        if my_param == 'finesse':
             self.param = 'finesse'
-        if my_param in ('time', 'Time'):
+        if my_param == 'time':
             self.param = 'time'
 
     def gamemode_init(self, my_str: str) -> None:

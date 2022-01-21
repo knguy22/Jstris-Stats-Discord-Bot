@@ -181,12 +181,17 @@ def clock_to_seconds(s: str) -> float:
     """
     # format
     # 1:43.365
-
-    colonindex = s.index(":")
-    periodindex = s.index(".")
-    minutes = int(s[: colonindex])
+    minutes = 0
+    milliseconds = 0
+    colonindex = -1
+    periodindex = len(s)
+    if ':' in s:
+        colonindex = s.index(":")
+        minutes = int(s[: colonindex])
+    if '.' in s:
+        periodindex = s.index(".")
+        milliseconds = float(s[periodindex:])
     seconds = int(s[colonindex + 1: periodindex])
-    milliseconds = float(s[periodindex:])
 
     return round(60 * minutes + seconds + milliseconds, 3)
 

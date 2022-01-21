@@ -397,18 +397,24 @@ def most_(list_of_runs: list, my_param: str) -> dict:
 
 def average_(list_of_runs: list, my_param: str) -> [float, str]:
 
-    if my_param == "time":
+    # Converts time to datetime to prepare everything
+    if my_param == "time" or my_param == '20tsd time':
+        new_list_of_runs = []
+        for i in list_of_runs:
+            # Sometimes time is not saved
+            if i[my_param] != '-':
+                new_list_of_runs.append({'seconds': jstrishtml.clock_to_seconds(i[my_param])})
         my_param = 'seconds'
-        list_of_seconds = list(map(lambda x: jstrishtml.clock_to_seconds(x['time']), list_of_runs))
-        for c, my_second in enumerate(list_of_seconds):
-            list_of_runs[c]['seconds'] = my_second
+        list_of_runs = new_list_of_runs
 
     stat_average = 0
+    numgames = 0
+
     for i in list_of_runs:
         stat_average += i[my_param]
-
+        numgames += 1
     if my_param == "seconds":
-        return jstrishtml.seconds_to_timestr(round(stat_average / len(list_of_runs), 2))
+        return str(datetime.timedelta(seconds=round(stat_average / numgames, 2)))[:-3]
     return round(stat_average/len(list_of_runs), 2)
 
 

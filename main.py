@@ -152,11 +152,24 @@ class IndivCommands(commands.Cog):
 
     @commands.command(aliases=['avg'])
     async def average(self, ctx, username: str, *args) -> None:
+
         logging.info("Beginning average")
         if not await GeneralMaintenance.num_processes_init(ctx):
             return None
 
         my_ps = IndivParameterInit(args)
+        
+        if my_ps.game in ('1', '3', '4'):
+            data_criteria = ["time", "blocks", "pps", "finesse"]
+        elif my_ps.game == '5':
+            data_criteria = ["score", "blocks", "ppb", "pps", "finesse"]
+        elif my_ps.game == '7':
+            data_criteria = ["tsds", "time", "20tsd time", "blocks", "pps"]
+        elif my_ps.game == '8':
+            data_criteria = ["pcs", "time", "blocks", "pps", "finesse"]
+        # Default sprint
+        else:
+            data_criteria = ["username", "time", "blocks", "pps", "finesse", "date"]
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
         searched_games = CacheInit(username, my_ps, lock)
@@ -165,34 +178,13 @@ class IndivCommands(commands.Cog):
         await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
         await ctx.send(ctx.author.mention)
+
         if searched_games.has_error:
             await ctx.send(searched_games.error_message)
         else:
-            my_average = jstrisfunctions.average_(searched_games.returned_replays, my_ps.param)
-            await ctx.send(f"Average {my_ps.param} for {username} is: {my_average}")
+            embed = await self.average_indiv_embed(username, data_criteria, searched_games.returned_replays)
+            await ctx.send(embed=embed)
         logging.info("Finishing average")
-
-    @commands.command()
-    async def numgames(self, ctx, username: str, *args) -> None:
-        logging.info("Beginning numgames")
-        if not await GeneralMaintenance.num_processes_init(ctx):
-            return None
-
-        my_ps = IndivParameterInit(args)
-        init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, my_ps, lock)
-        await searched_games.fetch_all_games()
-
-        await GeneralMaintenance.num_processes_finish()
-
-        await init_message.delete()
-        await ctx.send(ctx.author.mention)
-        if searched_games.has_error:
-            await ctx.send(searched_games.error_message)
-        else:
-            a = len(searched_games.returned_replays)
-            await ctx.send(f"{str(a)} games")
-        logging.info("Finishing numgames")
 
     @commands.command()
     async def subblocks(self, ctx, username: str, blocks: str, *args) -> None:
@@ -241,6 +233,24 @@ class IndivCommands(commands.Cog):
         await ctx.send(embed=embed)
 
         logging.info("Sending replay")
+
+    @staticmethod
+    async def average_indiv_embed(username, data_criteria, games):
+        embed = await embed_init(username)
+
+        for criteria in data_criteria:
+            data_avg = jstrisfunctions.average_(games, criteria)
+            embed.add_field(name=f"**{criteria}**", value=str(data_avg), inline=False)
+
+        embed.add_field(name='**games:**', value=str(len(games)), inline=False)
+
+        list_of_dates = list(map(lambda x: jstrisfunctions.DateInit.str_to_datetime(x['date (CET)']), games))
+        min_date = jstrisfunctions.DateInit.datetime_to_str_naive(min(list_of_dates))
+        max_date = jstrisfunctions.DateInit.datetime_to_str_naive(max(list_of_dates))
+        embed.add_field(name='**first date (CET):**', value=min_date, inline=False)
+        embed.add_field(name='**last date (CET):**', value=max_date, inline=False)
+
+        return embed
 
 
 # VERSUS COMMANDS

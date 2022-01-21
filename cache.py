@@ -18,6 +18,7 @@ import aiofiles
 from concurrent.futures import ThreadPoolExecutor
 
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -381,16 +382,12 @@ class CacheInit:
         # Using frozen sets was the fastest way I could think of to delete duplicate replays while maintaining ordering
         # Using a normal for loop is much slower
 
-        frozen_set_list = []
-        for i in my_list:
-            frozen_set_list.append(frozenset(i.items()))
+        frozen_set_list = [frozenset(i.items()) for i in my_list]
 
         ordered_dict_list = OrderedDict.fromkeys(frozen_set_list)
         ordered_dict_list = list(ordered_dict_list)
 
-        new_list = []
-        for i in ordered_dict_list:
-            new_list.append(dict(i))
+        new_list = [dict(i) for i in ordered_dict_list]
 
         return new_list
 

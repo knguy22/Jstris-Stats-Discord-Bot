@@ -546,9 +546,6 @@ class UserIndivGames:
         Deletes duplicate replays
         """
 
-        # Using frozen sets was the fastest way I could think of to delete duplicate replays while maintaining ordering
-        # Using a normal for loop is much slower
-
         new_list = {i: j for (i, j) in enumerate(self.all_replays)}
         new_list = [i for i in new_list.values()]
 

@@ -2,6 +2,8 @@ import datetime
 import pytz
 import jstrishtml
 import logging
+import operator
+
 logger = logging.getLogger(__name__)
 
 
@@ -374,9 +376,12 @@ def least_(list_of_runs: list, my_param: str) -> dict:
         for c, my_second in enumerate(list_of_seconds):
             list_of_runs[c]['seconds'] = my_second
 
-    final_run = sorted(list_of_runs, key=lambda x: x[my_param])[0]
+    if 'seconds' not in list_of_runs[0] or 'time' not in list_of_runs[0]:
+        final_run = sorted(list_of_runs, key=lambda x: x[my_param])[0]
+    else:
+        final_run = sorted(list_of_runs, key=operator.itemgetter(my_param,'time'))[0]
 
-    if my_param == "time":
+    if my_param == "seconds":
         del final_run["seconds"]
 
     return final_run
@@ -390,9 +395,13 @@ def most_(list_of_runs: list, my_param: str) -> dict:
         for c, my_second in enumerate(list_of_seconds):
             list_of_runs[c]['seconds'] = my_second
 
-    final_run = sorted(list_of_runs, key=lambda x: x[my_param])[-1]
+    # final_run = sorted(list_of_runs, key=lambda x: x[my_param])[-1]
+    if 'seconds' not in list_of_runs[0] or 'time' not in list_of_runs[0]:
+        final_run = sorted(list_of_runs, key=lambda x: x[my_param])[-1]
+    else:
+        final_run = sorted(list_of_runs, key=operator.itemgetter(my_param, 'time'))[-1]
 
-    if my_param == "time":
+    if my_param == "seconds":
         del final_run["seconds"]
 
     return final_run

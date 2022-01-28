@@ -5,7 +5,6 @@ import jstrisfunctions
 from jstrishtml import *
 import datetime
 import pytz
-from collections import OrderedDict
 
 import logging
 logger = logging.getLogger(__name__)
@@ -305,7 +304,6 @@ class UserIndivGames:
                       f"&page={self.current_last_replay}&time={self.period}"
             else:
                 url = f"https://jstris.jezevec10.com/{gamemode}?display=5&user={self.username}&time={self.period}"
-
             self.request_games(url)
 
             # adds current page replays to list of all other replays so far
@@ -546,15 +544,8 @@ class UserIndivGames:
         Deletes duplicate replays
         """
 
-        # Using frozen sets was the fastest way I could think of to delete duplicate replays while maintaining ordering
-        # Using a normal for loop is much slower
-
-        frozen_set_list = [frozenset(i.items()) for i in self.all_replays]
-
-        ordered_dict_list = OrderedDict.fromkeys(frozen_set_list)
-        ordered_dict_list = list(ordered_dict_list)
-
-        new_list = [dict(i) for i in ordered_dict_list]
+        new_list = {str(i): i for i in self.all_replays}
+        new_list = [i for i in new_list.values()]
 
         self.all_replays = new_list
 

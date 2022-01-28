@@ -379,7 +379,7 @@ def least_(list_of_runs: list, my_param: str) -> dict:
     if 'seconds' not in list_of_runs[0] or 'time' not in list_of_runs[0]:
         final_run = sorted(list_of_runs, key=lambda x: x[my_param])[0]
     else:
-        final_run = sorted(list_of_runs, key=operator.itemgetter('blocks','time'))[0]
+        final_run = sorted(list_of_runs, key=operator.itemgetter(my_param,'time'))[0]
 
     if my_param == "seconds":
         del final_run["seconds"]
@@ -399,7 +399,7 @@ def most_(list_of_runs: list, my_param: str) -> dict:
     if 'seconds' not in list_of_runs[0] or 'time' not in list_of_runs[0]:
         final_run = sorted(list_of_runs, key=lambda x: x[my_param])[-1]
     else:
-        final_run = sorted(list_of_runs, key=operator.itemgetter('blocks', 'time'))[-1]
+        final_run = sorted(list_of_runs, key=operator.itemgetter(my_param, 'time'))[-1]
 
     if my_param == "seconds":
         del final_run["seconds"]

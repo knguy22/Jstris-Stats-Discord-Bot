@@ -7,8 +7,7 @@ import logging
 
 import jstrisfunctions
 import jstrishtml
-from jstrisfunctions import VersusParameterInit
-from jstrisfunctions import IndivParameterInit
+from jstrisfunctions import VersusParameterInit, IndivParameterInit, DateInit
 
 import cache
 from cache import CacheInit
@@ -35,6 +34,7 @@ class GeneralMaintenance(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self) -> None:
+        await BadgerBot.change_presence(activity=discord.Game("Jstris, ?help"))
         print(f'Logged in as {BadgerBot.user} (ID: {BadgerBot.user.id})')
         print('------')
 
@@ -494,8 +494,8 @@ class VsCommands(commands.Cog):
             embed.add_field(name='**spm (weighted):**', value=list_of_opponents[opponent]["wspm"], inline=True)
             embed.add_field(name='**pps (weighted):**', value=list_of_opponents[opponent]["wpps"], inline=True)
             embed.add_field(name='**max combo:**', value=list_of_opponents[opponent]["ren"], inline=False)
-            embed.add_field(name='**time (seconds):**', value=
-                            round(list_of_opponents[opponent]["time_sum"] / list_of_opponents[opponent]['games'], 2),
+            embed.add_field(name='**time (seconds):**',
+                            value=round(list_of_opponents[opponent]["time_sum"] / list_of_opponents[opponent]['games'], 2),
                             inline=True)
             embed.add_field(name='**Earliest game (CET):**', value=list_of_opponents[opponent]["min_time"], inline=True)
             embed.add_field(name='**Latest game (CET):**', value=list_of_opponents[opponent]["max_time"], inline=True)
@@ -543,27 +543,33 @@ async def clear_unaccessed_replays() -> None:
 
 
 @BadgerBot.command()
-async def totalgametime(ctx, username: str) -> None:
+async def totalgametime(ctx, username: str, first_date='0001-01-01 00:00:01', last_date='9999-01-01 00:00:00') -> None:
     """
     Returns total game time of all indiv and versus modes
 
     :param ctx:
     :param username:
+    :param: first_date:
+    :param: last_date:
     :return:
     """
     logging.info("Beginning total_gametime")
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
+
     all_gamemodes = ['sprint20', 'sprint40', 'sprint100', 'sprint1000', 'cheese10', 'cheese18', 'cheese100', 'ultra',
                      'survival', '20tsd', 'pcmode', 'vs']
     await GeneralMaintenance.num_processes_init(ctx)
     total_time = 0
     embed = await embed_init(username)
+    dates = DateInit(first_date, last_date)
 
     for gamemode in all_gamemodes:
+
+        dates_tuple = (dates.first, dates.last, gamemode)
         if gamemode != 'vs':
-            curr_gamemode = CacheInit(username, IndivParameterInit((gamemode, '')), lock)
+            curr_gamemode = CacheInit(username, IndivParameterInit(dates_tuple), lock)
         else:
-            curr_gamemode = CacheInit(username, VersusParameterInit(('0001-01-01 00:00:00', '9999-01-01 00:00:00')), lock)
+            curr_gamemode = CacheInit(username, VersusParameterInit(dates_tuple), lock)
         await curr_gamemode.fetch_all_games()
 
         gamemode_total_time = 0
@@ -571,13 +577,12 @@ async def totalgametime(ctx, username: str) -> None:
 
             if 'time' in replay.keys():
                 gamemode_total_time += jstrishtml.clock_to_seconds(replay['time'])
-            elif 'gametime' in replay.keys():
+            elif gamemode == 'vs':
                 gamemode_total_time += float(replay['gametime'])
             elif gamemode == 'pcmode':
                 gamemode_total_time += replay['blocks'] / replay['pps']
-        if gamemode == 'ultra':
-            gamemode_total_time += 120 * len(curr_gamemode.returned_replays)
-
+            elif gamemode == 'ultra':
+                gamemode_total_time += 120
         embed.add_field(name=f'**{gamemode}:**', value=jstrishtml.seconds_to_timestr(gamemode_total_time), inline=True)
 
         total_time += gamemode_total_time
@@ -597,7 +602,7 @@ async def totalgametime(ctx, username: str) -> None:
 if __name__ == "__main__":
 
     if not os.path.exists('playerstats'):
-      os.mkdir('playerstats')
+        os.mkdir('playerstats')
 
     clear_unaccessed_replays.start()
 

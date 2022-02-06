@@ -378,7 +378,7 @@ class IndivParameterInit:
                                              'operator': comparison_operator})
                 else:
                     self.has_error = True
-                    self.error_message = f"Error: comparison value is not in a valid date format: {comparison_value}"
+                    self.error_message = f'Error: comparison value is not in a valid date format: "{comparison_value}"'
             else:
                 # Makes sure that comparison_value is a float
                 try:
@@ -386,7 +386,7 @@ class IndivParameterInit:
                                              'operator': comparison_operator})
                 except ValueError:
                     self.has_error = True
-                    self.error_message = f"Error: comparison value is not numeric: {comparison_value}"
+                    self.error_message = f'Error: comparison value is not numeric: "{comparison_value}"'
         elif not self.comparisons and comparison_operator:
             print(comparison_operator, my_comp)
             self.has_error = True
@@ -507,7 +507,7 @@ class VersusParameterInit:
                                              'operator': comparison_operator})
                 else:
                     self.has_error = True
-                    self.error_message = f"Error: comparison value is not in a valid date format: {comparison_value}"
+                    self.error_message = f'Error: comparison value is not in a valid date format: "{comparison_value}"'
             else:
                 # Makes sure that comparison_value is a float
                 try:
@@ -515,7 +515,7 @@ class VersusParameterInit:
                                              'operator': comparison_operator})
                 except ValueError:
                     self.has_error = True
-                    self.error_message = f"Error: comparison value is not numeric: {comparison_value}"
+                    self.error_message = f'Error: comparison value is not numeric: "{comparison_value}"'
         elif not self.comparisons and comparison_operator:
             self.has_error = True
             self.error_message = f'Error: comparison parameter "{comparison_param}" is not a valid parameter in your given gamemode: "vs"'

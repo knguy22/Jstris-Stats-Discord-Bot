@@ -4,6 +4,7 @@ import datetime
 import pytz
 
 import jstrisfunctions
+import jstrishtml
 from jstrisfunctions import DateInit
 
 from jstrisuser import UserLiveGames
@@ -54,6 +55,11 @@ class CacheInit:
         logging.info(self.params)
         logging.info(self.gamemode_key)
 
+        if self.params.has_error:
+            self.has_error = True
+            self.error_message = self.params.error_message
+            return None
+
         # Choose which gamemode or replays you want to fetch
         if type(self.params) == jstrisfunctions.VersusParameterInit:
             await self.fetch_versus_replays()
@@ -63,8 +69,12 @@ class CacheInit:
             self.has_error = True
             self.error_message = f'Not valid param type: {self.params}, {type(self.params)}'
 
+        # await self.filter_using_sorting_criteria()
+        for i in self.params.comparisons:
+            await self.filter_using_sorting_criteria(i)
+
         # Final check if replays are empty
-        if await self.not_has_games(self.returned_replays):
+        if await self.not_has_games(self.returned_replays) and not self.has_error:
             self.has_error = True
             self.error_message = f"Error: {self.username} has no played games"
 
@@ -188,7 +198,6 @@ class CacheInit:
         async with self.lock:
             if os.path.exists(f"playerstats/{self.username}.json"):
                 async with aiofiles.open(f"playerstats/{self.username}.json", 'r') as f:
-                    # async for player_stats in ijson.items_async(f, ''):
                     player_stats = json.loads(await f.read())
                     self.user_dict = player_stats
         logger.info(f'Ending fetching {self.username}')
@@ -306,6 +315,48 @@ class CacheInit:
             await f.write(json.dumps(float_new_username_stats))
 
         logger.info(f'Ending storing {self.username} stats {self.username}')
+
+    async def filter_using_sorting_criteria(self, comparison_dict):
+        # param = self.params.comparison_param
+        # operator = self.params.comparison_operator
+        # value = self.params.comparison_value
+        param = comparison_dict['param']
+        operator = comparison_dict['operator']
+        value = comparison_dict['value']
+        replays = self.returned_replays
+        if not operator:
+            return None
+
+        if param == "date (CET)" or param == 'gtime':
+            for i, j in enumerate(self.returned_replays):
+                self.returned_replays[i][param] = DateInit.str_to_datetime(j[param])
+        elif param == 'time':
+            for i, j in enumerate(self.returned_replays):
+                self.returned_replays[i][param] = jstrishtml.clock_to_seconds(j[param])
+
+        filtered_replays = []
+        for i in replays:
+            exec_bool = False
+            if operator == '<=' and i[param] <= value:
+                exec_bool = True
+            elif operator == '>=' and i[param] >= value:
+                exec_bool = True
+            elif operator == '==' and i[param] == value:
+                exec_bool = True
+            elif operator == '<' and i[param] < value:
+                exec_bool = True
+            elif operator == '>' and i[param] > value:
+                exec_bool = True
+            if exec_bool:
+                filtered_replays.append(i)
+        self.returned_replays = filtered_replays
+
+        if param == "date (CET)" or param == 'gtime':
+            for i, j in enumerate(self.returned_replays):
+                self.returned_replays[i][param] = DateInit.datetime_to_str_naive(j[param])
+        elif param == 'time':
+            for i, j in enumerate(self.returned_replays):
+                self.returned_replays[i][param] = jstrishtml.seconds_to_clock(j[param])
 
     @staticmethod
     async def replace_decimals(obj):

@@ -191,6 +191,9 @@ class IndivParameterInit:
         self.param = ""
         self.first_date = ""
         self.last_date = ""
+        self.comparisons = []
+        self.has_error = False
+        self.error_message = ""
 
         logging.info(f"IndivParameterInit inputs: {my_tuple}")
 
@@ -232,18 +235,57 @@ class IndivParameterInit:
         self.default_settings()
         logging.info(self)
 
+        # do comparisons; need to do comparisons after defaults are set
+        for i in my_tuple:
+            self.comparison_init(i)
+
     def param_init(self, my_param: str, game: str) -> None:
         my_param = my_param.lower()
         if game == 'ultra' and my_param == 'ppb':
             self.param = 'ppb'
+        elif my_param == 'ppb' and game:
+            self.has_error = True
+            self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "{game}"'
+        else:
+            self.has_error = True
+            self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "sprint"'
+
         if game == 'ultra' and my_param == 'score':
             self.param = 'score'
+        elif my_param == 'ppb' and game:
+            self.has_error = True
+            self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "{game}"'
+        else:
+            self.has_error = True
+            self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "sprint"'
+
         if game == 'pcmode' and my_param in ('pcs', 'pc'):
             self.param = 'pcs'
+        elif my_param in ('pcs', 'pc') and game:
+            self.has_error = True
+            self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "{game}"'
+        else:
+            self.has_error = True
+            self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "sprint"'
+
         if game == '20tsd' and my_param == 'tsds':
             self.param = 'tsds'
+        elif my_param == 'tsds' and game:
+            self.has_error = True
+            self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "{game}"'
+        else:
+            self.has_error = True
+            self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "sprint"'
+
         if game == '20tsd' and my_param == '20tsd time':
             self.param = '20tsd time'
+        elif my_param == 'tsds' and game:
+            self.has_error = True
+            self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "{game}"'
+        else:
+            self.has_error = True
+            self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "sprint"'
+
         if my_param == 'pps':
             self.param = 'pps'
         if my_param == 'blocks':
@@ -285,6 +327,70 @@ class IndivParameterInit:
             self.game = a["game"]
             self.mode = a["mode"]
             self.gamemode = a["gamemode"]
+            
+    def comparison_init(self, my_comp: str):
+        """
+        Extracts necessary info for comparison; comparisons will be made in the following form:
+
+        Parameter Operator Value (Exclude spaces)
+
+        EX: finesse<5.4
+
+        :param my_comp: str
+        :return:
+        """
+
+        data_criteria = []
+        if self.game in ('1', '3', '4'):
+            data_criteria = ["time", "blocks", "pps", "finesse", "date"]
+        elif self.game == '5':
+            data_criteria = ["score", "blocks", "ppb", "pps", "finesse", "date"]
+        elif self.game == '7':
+            data_criteria = ["tsds", "time", "20tsd time", "blocks", "pps", "date"]
+        elif self.game == '8':
+            data_criteria = ["pcs", "time", "20tsd time", "blocks", "pps", "date"]
+
+        comparison_operator = ""
+        if ">=" in my_comp:
+            comparison_operator = '>='
+        elif "<=" in my_comp:
+            comparison_operator = '<='
+        elif "<" in my_comp:
+            comparison_operator = '<'
+        elif ">" in my_comp:
+            comparison_operator = '>'
+        elif "=" in my_comp:
+            comparison_operator = '='
+
+        # Param and value both avoid the operator
+        comparison_param = my_comp[: my_comp.find(comparison_operator)]
+        comparison_value = my_comp[my_comp.find(comparison_operator) + len(comparison_operator):]
+        if comparison_operator == '=':
+            comparison_operator = '=='
+
+        if comparison_param in data_criteria:
+            self.has_error = False
+            self.error_message = ""
+            if comparison_param == "date":
+                a = DateInit(comparison_value, comparison_value)
+                if not a.has_error:
+                    self.comparisons.append({'param': 'date (CET)', 'value': DateInit.str_to_datetime(a.first),
+                                             'operator': comparison_operator})
+                else:
+                    self.has_error = True
+                    self.error_message = f'Error: comparison value is not in a valid date format: "{comparison_value}"'
+            else:
+                # Makes sure that comparison_value is a float
+                try:
+                    self.comparisons.append({'param': comparison_param, 'value': float(comparison_value),
+                                             'operator': comparison_operator})
+                except ValueError:
+                    self.has_error = True
+                    self.error_message = f'Error: comparison value is not numeric: "{comparison_value}"'
+        elif not self.comparisons and comparison_operator:
+            print(comparison_operator, my_comp)
+            self.has_error = True
+            self.error_message = f'Error: comparison parameter "{comparison_param}" is not a valid parameter in your given gamemode: "{self.gamemode}"'
 
     def default_settings(self) -> None:
         if self.gamemode == "":
@@ -308,7 +414,7 @@ class IndivParameterInit:
 
     def __repr__(self) -> str:
         return f"IndivParameterInit({self.gamemode}, {self.game}, {self.mode}, {self.param}," \
-               f" {self.first_date}, {self.last_date})"
+               f" {self.first_date}, {self.last_date}, {self.comparisons}"
 
 
 class VersusParameterInit:
@@ -316,6 +422,9 @@ class VersusParameterInit:
         self.first_date = ""
         self.last_date = ""
         self.offset = 1000000000
+        self.comparisons = []
+        self.has_error = False
+        self.error_message = ""
 
         logging.info(f"VersusParameterInit inputs: {my_tuple}")
 
@@ -351,6 +460,65 @@ class VersusParameterInit:
         for i in my_tuple:
             if i.isdigit():
                 self.offset = int(i)
+
+        # sets comparisons if any
+        for i in my_tuple:
+            self.comparison_init(i)
+
+    def comparison_init(self, my_comp: str):
+        """
+        Extracts necessary info for comparison; comparisons will be made in the following form:
+
+        Parameter Operator Value (Exclude spaces)
+
+        EX: finesse<5.4
+
+        :param my_comp: str
+        :return:
+        """
+
+        data_criteria = ['date', 'apm', 'spm', 'pps', 'wapm', 'wspm', "wpps", 'ren', 'time', 'position', 'players']
+
+        comparison_operator = ""
+        if ">=" in my_comp:
+            comparison_operator = '>='
+        elif "<=" in my_comp:
+            comparison_operator = '<='
+        elif "<" in my_comp:
+            comparison_operator = '<'
+        elif ">" in my_comp:
+            comparison_operator = '>'
+        elif "=" in my_comp:
+            comparison_operator = '='
+
+        # Param and value both avoid the operator
+        comparison_param = my_comp[: my_comp.find(comparison_operator)]
+        comparison_value = my_comp[my_comp.find(comparison_operator) + len(comparison_operator):]
+        if comparison_operator == '=':
+            comparison_operator = '=='
+
+        if comparison_param in data_criteria:
+            self.has_error = False
+            self.error_message = ""
+            if comparison_param == "date":
+                a = DateInit(comparison_value, comparison_value)
+                if not a.has_error:
+                    self.comparisons.append({'param': 'gtime', 'value': DateInit.str_to_datetime(a.first),
+                                             'operator': comparison_operator})
+                else:
+                    self.has_error = True
+                    self.error_message = f'Error: comparison value is not in a valid date format: "{comparison_value}"'
+            else:
+                # Makes sure that comparison_value is a float
+                try:
+                    self.comparisons.append({'value': float(comparison_value), 'param': comparison_param,
+                                             'operator': comparison_operator})
+                except ValueError:
+                    self.has_error = True
+                    self.error_message = f'Error: comparison value is not numeric: "{comparison_value}"'
+        elif not self.comparisons and comparison_operator:
+            self.has_error = True
+            self.error_message = f'Error: comparison parameter "{comparison_param}" is not a valid parameter in your given gamemode: "vs"'
 
     def __repr__(self):
         return f"VersusParameterInit ({self.first_date}, {self.last_date}, {self.offset})"

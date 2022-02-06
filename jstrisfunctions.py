@@ -348,7 +348,7 @@ class IndivParameterInit:
         elif self.game == '7':
             data_criteria = ["tsds", "time", "20tsd time", "blocks", "pps", "date"]
         elif self.game == '8':
-            data_criteria = ["pcs", "time", "20tsd time", "blocks", "pps", "date"]
+            data_criteria = ["pcs", "time", "blocks", "pps", "finesse", "date"]
 
         comparison_operator = ""
         if ">=" in my_comp:

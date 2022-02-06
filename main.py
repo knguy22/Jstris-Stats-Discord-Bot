@@ -186,37 +186,6 @@ class IndivCommands(commands.Cog):
             await ctx.send(embed=embed)
         logging.info("Finishing average")
 
-    @commands.command()
-    async def subblocks(self, ctx, username: str, blocks: str, *args) -> None:
-        if not blocks.isdigit():
-            await ctx.send(f"Not valid blocks number: {blocks}")
-            return None
-
-        logging.info("Beginning sub300")
-        if not await GeneralMaintenance.num_processes_init(ctx):
-            return None
-
-        init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-
-        args = list(args)
-        args.append('cheese')
-        args = tuple(args)
-
-        my_ps = IndivParameterInit(args)
-        searched_games = CacheInit(username, my_ps, lock)
-        await searched_games.fetch_all_games()
-
-        await GeneralMaintenance.num_processes_finish()
-        await init_message.delete()
-        if searched_games.has_error:
-            await ctx.send(ctx.author.mention)
-            await ctx.send(searched_games.error_message)
-        else:
-            a = jstrisfunctions.subblocks(searched_games.returned_replays, int(blocks))
-            await ctx.send(ctx.author.mention)
-            await ctx.send(f"{username} has {a} sub {blocks}s")
-        logging.info("Finishing subblocks")
-
     @staticmethod
     async def replay_send(ctx, my_ps: dict) -> None:
         embed = await embed_init(my_ps['username'])

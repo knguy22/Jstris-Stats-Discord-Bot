@@ -246,45 +246,30 @@ class IndivParameterInit:
         elif my_param == 'ppb' and game:
             self.has_error = True
             self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "{game}"'
-        else:
-            self.has_error = True
-            self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "sprint"'
 
         if game == 'ultra' and my_param == 'score':
             self.param = 'score'
         elif my_param == 'ppb' and game:
             self.has_error = True
             self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "{game}"'
-        else:
-            self.has_error = True
-            self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "sprint"'
 
         if game == 'pcmode' and my_param in ('pcs', 'pc'):
             self.param = 'pcs'
         elif my_param in ('pcs', 'pc') and game:
             self.has_error = True
             self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "{game}"'
-        else:
-            self.has_error = True
-            self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "sprint"'
 
         if game == '20tsd' and my_param == 'tsds':
             self.param = 'tsds'
         elif my_param == 'tsds' and game:
             self.has_error = True
             self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "{game}"'
-        else:
-            self.has_error = True
-            self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "sprint"'
 
         if game == '20tsd' and my_param == '20tsd time':
             self.param = '20tsd time'
         elif my_param == 'tsds' and game:
             self.has_error = True
             self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "{game}"'
-        else:
-            self.has_error = True
-            self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "sprint"'
 
         if my_param == 'pps':
             self.param = 'pps'

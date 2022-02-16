@@ -825,7 +825,7 @@ async def opponents_matchups_replays(list_of_games: list) -> dict:
     return games_sorted_by_opponent
 
 async def check_user_exists(username:str) -> bool:
-    my_url = f"https://jstris.jezevec10.com/api/u/{self.username}/live/games?offset=0"
+    my_url = f"https://jstris.jezevec10.com/api/u/{username}/live/games?offset=0"
     r = requests.get(my_url)
     page_request = r.json()
     if "error" in page_request:

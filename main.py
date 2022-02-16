@@ -7,7 +7,7 @@ import logging
 
 import jstrisfunctions
 import jstrishtml
-from jstrisfunctions import VersusParameterInit, IndivParameterInit, DateInit
+from jstrisfunctions import VersusParameterInit, IndivParameterInit, DateInit, check_user_exists
 
 import cache
 from cache import CacheInit
@@ -354,6 +354,22 @@ class VsCommands(commands.Cog):
             return None
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
 
+        #Check if usernames exist
+
+        if not await jstrisfunctions.check_user_exists(username):
+            await init_message.delete()
+            await ctx.send(ctx.author.mention)
+            await ctx.send(f'Not valid username: {username}')
+            await GeneralMaintenance.num_processes_finish()
+            return None
+
+        if not await jstrisfunctions.check_user_exists(opponent):
+            await init_message.delete()
+            await ctx.send(ctx.author.mention)
+            await ctx.send(f'Not valid username: {opponent}')
+            await GeneralMaintenance.num_processes_finish()
+            return None
+
         # Username's games
         logging.info(f"Beginning {username}")
         searched_games = CacheInit(username, param_init, lock)
@@ -375,6 +391,7 @@ class VsCommands(commands.Cog):
         await searched_games.fetch_all_games()
 
         if searched_games.has_error:
+            await init_message.delete()
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
             await GeneralMaintenance.num_processes_finish()

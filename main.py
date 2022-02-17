@@ -13,6 +13,8 @@ import cache
 from cache import CacheInit
 
 import asyncio
+import aiofiles
+import json
 
 intents = discord.Intents.default()
 intents.members = True
@@ -138,7 +140,6 @@ class IndivCommands(commands.Cog):
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
         searched_games = CacheInit(username, my_ps, lock)
         await searched_games.fetch_all_games()
-
         await GeneralMaintenance.num_processes_finish()
 
         await init_message.delete()
@@ -150,7 +151,7 @@ class IndivCommands(commands.Cog):
             await IndivCommands.replay_send(ctx, a)
         logging.info("Finishing most")
 
-    @commands.command(aliases=['avg'])
+    @commands.command(aliases=['avg', 'indiv'])
     async def average(self, ctx, username: str, *args) -> None:
 
         logging.info("Beginning average")
@@ -169,7 +170,7 @@ class IndivCommands(commands.Cog):
             data_criteria = ["pcs", "time", "blocks", "pps", "finesse"]
         # Default sprint
         else:
-            data_criteria = ["username", "time", "blocks", "pps", "finesse", "date"]
+            data_criteria = ["time", "blocks", "pps", "finesse", "date"]
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
         searched_games = CacheInit(username, my_ps, lock)
@@ -185,6 +186,34 @@ class IndivCommands(commands.Cog):
             embed = await self.average_indiv_embed(username, data_criteria, searched_games.returned_replays)
             await ctx.send(embed=embed)
         logging.info("Finishing average")
+
+    @commands.command()
+    async def indivreplays(self, ctx, username: str, *args) -> None:
+        logging.info("Beginning indivreplays")
+        if not await GeneralMaintenance.num_processes_init(ctx):
+            return None
+        
+        my_ps = IndivParameterInit(args)
+        init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
+        searched_games = CacheInit(username, my_ps, lock)
+        await searched_games.fetch_all_games()
+        await GeneralMaintenance.num_processes_finish()
+        await init_message.delete()
+
+        if searched_games.has_error:
+            await ctx.send(ctx.author.mention)
+            await ctx.send(searched_games.error_message)
+        else:
+            counter = 1
+            await ctx.send(ctx.author.mention)
+            while searched_games.returned_replays:
+                async with aiofiles.open(f'{username}_{counter}.json', 'w') as f:
+                    await f.write(json.dumps(searched_games.returned_replays[:20000], indent=1))
+                with open(f'{username}_{counter}.json', 'rb') as f:
+                    await ctx.send(file=discord.File(f,f'{username}_{counter}.json'))
+                os.remove(f'{username}_{counter}.json')
+                counter += 1
+                searched_games.returned_replays = searched_games.returned_replays[20000:]
 
     @staticmethod
     async def replay_send(ctx, my_ps: dict) -> None:
@@ -409,6 +438,34 @@ class VsCommands(commands.Cog):
         await ctx.send(embed=embed2)
 
         logging.info("Finishing vsmatchup")
+
+    @commands.command()
+    async def vsreplays(self, ctx, username: str, *args) -> None:
+        logging.info("Beginning indivreplays")
+        if not await GeneralMaintenance.num_processes_init(ctx):
+            return None
+        
+        my_ps = VersusParameterInit(args)
+        init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
+        searched_games = CacheInit(username, my_ps, lock)
+        await searched_games.fetch_all_games()
+        await GeneralMaintenance.num_processes_finish()
+        await init_message.delete()
+
+        if searched_games.has_error:
+            await ctx.send(ctx.author.mention)
+            await ctx.send(searched_games.error_message)
+        else:
+            counter = 1
+            await ctx.send(ctx.author.mention)
+            while searched_games.returned_replays:
+                async with aiofiles.open(f'{username}_{counter}.json', 'w') as f:
+                    await f.write(json.dumps(searched_games.returned_replays[:20000], indent=1))
+                with open(f'{username}_{counter}.json', 'rb') as f:
+                    await ctx.send(file=discord.File(f,f'{username}_{counter}.json'))
+                os.remove(f'{username}_{counter}.json')
+                counter += 1
+                searched_games.returned_replays = searched_games.returned_replays[20000:]
 
     @commands.command()
     async def vsmatchupreplays(self, ctx, username: str, opponent: str, *args):

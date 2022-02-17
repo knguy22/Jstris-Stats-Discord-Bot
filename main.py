@@ -549,6 +549,13 @@ async def totalgametime(ctx, username: str, first_date='0001-01-01 00:00:01', la
     embed = await embed_init(username)
     dates = DateInit(first_date, last_date)
 
+    if not await jstrisfunctions.check_user_exists(username):
+        await init_message.delete()
+        await ctx.send(ctx.author.mention)
+        await ctx.send(f'Not valid username: {username}')
+        await GeneralMaintenance.num_processes_finish()
+        return None
+
     for gamemode in all_gamemodes:
 
         dates_tuple = (dates.first, dates.last, gamemode)

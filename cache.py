@@ -1,4 +1,3 @@
-from collections import OrderedDict
 import json
 
 import datetime
@@ -426,15 +425,9 @@ class CacheInit:
         :param my_list: list of replays
         :return: new_list:
         """
-        # Using frozen sets was the fastest way I could think of to delete duplicate replays while maintaining ordering
-        # Using a normal for loop is much slower
-
-        frozen_set_list = [frozenset(i.items()) for i in my_list]
-
-        ordered_dict_list = OrderedDict.fromkeys(frozen_set_list)
-        ordered_dict_list = list(ordered_dict_list)
-
-        new_list = [dict(i) for i in ordered_dict_list]
+        
+        new_list = {str(i): i for i in my_list}
+        new_list = [i for i in new_list.values()]
 
         return new_list
 

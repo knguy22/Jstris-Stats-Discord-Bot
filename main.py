@@ -1,3 +1,4 @@
+from ctypes import Union
 import os
 
 import discord
@@ -8,13 +9,13 @@ import logging
 import jstrisfunctions
 import jstrishtml
 from jstrisfunctions import VersusParameterInit, IndivParameterInit, DateInit, check_user_exists
-
 import cache
 from cache import CacheInit
 
 import asyncio
 import aiofiles
 import json
+import random
 
 intents = discord.Intents.default()
 intents.members = True
@@ -107,6 +108,7 @@ class IndivCommands(commands.Cog):
 
     @commands.command(aliases=['min'])
     async def least(self, ctx, username: str, *args) -> None:
+
         logging.info("Executing least")
         if not await GeneralMaintenance.num_processes_init(ctx):
             return None
@@ -123,15 +125,16 @@ class IndivCommands(commands.Cog):
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
         else:
-            a = jstrisfunctions.least_(searched_games.returned_replays, my_ps.param)
-            await IndivCommands.replay_send(ctx, a)
+            replay = jstrisfunctions.least_(searched_games.returned_replays, my_ps.param)
+            await ctx.send(ctx.author.mention)
+            await IndivCommands.replay_send(ctx, replay)
 
         logging.info("Finish least")
 
     @commands.command(aliases=['max'])
     async def most(self, ctx, username: str, *args) -> None:
+        
         logging.info("Executing most")
-
         if not await GeneralMaintenance.num_processes_init(ctx):
             return None
 
@@ -147,19 +150,16 @@ class IndivCommands(commands.Cog):
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
         else:
-            a = jstrisfunctions.most_(searched_games.returned_replays, my_ps.param)
-            await IndivCommands.replay_send(ctx, a)
+            replay = jstrisfunctions.most_(searched_games.returned_replays, my_ps.param)
+            await ctx.send(ctx.author.mention)
+            await IndivCommands.replay_send(ctx, replay)
         logging.info("Finishing most")
 
     @commands.command(aliases=['avg', 'indiv'])
     async def average(self, ctx, username: str, *args) -> None:
 
-        logging.info("Beginning average")
-        if not await GeneralMaintenance.num_processes_init(ctx):
-            return None
-
         my_ps = IndivParameterInit(args)
-        
+
         if my_ps.game in ('1', '3', '4'):
             data_criteria = ["time", "blocks", "pps", "finesse"]
         elif my_ps.game == '5':
@@ -172,6 +172,10 @@ class IndivCommands(commands.Cog):
         else:
             data_criteria = ["time", "blocks", "pps", "finesse", "date"]
 
+        logging.info("Beginning average")
+        if not await GeneralMaintenance.num_processes_init(ctx):
+            return None
+        
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
         searched_games = CacheInit(username, my_ps, lock)
         await searched_games.fetch_all_games()
@@ -186,6 +190,36 @@ class IndivCommands(commands.Cog):
             embed = await self.average_indiv_embed(username, data_criteria, searched_games.returned_replays)
             await ctx.send(embed=embed)
         logging.info("Finishing average")
+
+    @commands.command()
+    async def randomindiv(self, ctx, username: str, *args) -> None:
+        logging.info("Beginning randomindiv")
+        if not await GeneralMaintenance.num_processes_init(ctx):
+            return None
+
+        my_ps = IndivParameterInit(args)
+
+        init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
+        searched_games = CacheInit(username, my_ps, lock)
+        await searched_games.fetch_all_games()
+
+        await GeneralMaintenance.num_processes_finish()
+        await init_message.delete()
+
+        searched_games.returned_replays = [i for i in searched_games.returned_replays if i['replay'] != '- ']
+        if not searched_games.returned_replays:
+            searched_games.has_error = True
+            searched_games.error_message = "Error: No available replays links. Replay links have most likely been deleted."
+
+        if searched_games.has_error:
+            await ctx.send(ctx.author.mention)
+            await ctx.send(searched_games.error_message)
+        else:
+            replay = random.choice(searched_games.returned_replays)
+            await ctx.send(ctx.author.mention)
+            await IndivCommands.replay_send(ctx, replay)
+        
+        logging.info("Ending randomindiv")
 
     @commands.command()
     async def indivreplays(self, ctx, username: str, *args) -> None:
@@ -226,8 +260,6 @@ class IndivCommands(commands.Cog):
             embed.add_field(name="**replay:**", value=my_ps['replay'], inline=False)
         else:
             embed.add_field(name="**replay:**", value="replay not available", inline=False)
-        embed.set_footer(text='Have any suggestions? Please message Truebulge#0358 on Discord!')
-        await ctx.send(ctx.author.mention)
         await ctx.send(embed=embed)
 
         logging.info("Sending replay")
@@ -520,7 +552,7 @@ class VsCommands(commands.Cog):
         os.remove("versusmatchupreplays.txt")
 
     @staticmethod
-    async def vs_matchup_embed(ctx, username: str, opponent: str, list_of_opponents: dict) -> [None, discord.Embed]:
+    async def vs_matchup_embed(ctx, username: str, opponent: str, list_of_opponents: dict) -> Union[None, discord.Embed]:
         embed = await embed_init(username)
 
         if opponent in list_of_opponents:

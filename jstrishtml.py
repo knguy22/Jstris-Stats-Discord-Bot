@@ -227,4 +227,4 @@ def seconds_to_clock(s: float) -> str:
     return str(datetime.timedelta(seconds=s))[2:-3]
 
 if __name__ == "__main__":
-    print(seconds_to_timestr(3690))
+    pass

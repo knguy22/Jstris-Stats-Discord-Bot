@@ -551,18 +551,5 @@ class UserIndivGames:
 
 
 if __name__ == "__main__":
-
-    # import cProfile
-    # import pstats
-    #
-    # with cProfile.Profile() as pr:
-    #     h = UserLiveGames("mylifeisacircle", num_games=10000000)
-    #
-    # stats= pstats.Stats(pr)
-    # stats.sort_stats(pstats.SortKey.TIME)
-    # stats.print_stats()
-
-    h = UserLiveGames(username='sio')
-
-    print(h.first_date_str, h.last_date_str)
+    pass
 

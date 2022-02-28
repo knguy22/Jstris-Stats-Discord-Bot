@@ -179,9 +179,15 @@ class UserLiveGames:
     def check_username_exists(self) -> None:
         my_url = f"https://jstris.jezevec10.com/api/u/{self.username}/live/games?offset=0"
         r = self.my_session.get(my_url)
+        
+        if "<title>jstris.jezevec10.com | 522: Connection timed out</title>\n" in r.text:
+            self.has_error = True
+            self.error_message = "Connection error: can't connect to jstris right now"
+            return None
+        
         self.page_request = r.json()
         time.sleep(1.5)
-        if "error" in self.page_request:
+        if "error" in r.text:
             self.has_error = True
             self.error_message = f"{self.username}: Not valid username"
 
@@ -394,7 +400,10 @@ class UserIndivGames:
     def check_username_exists(self) -> None:
         my_url = f"https://jstris.jezevec10.com/u/{self.username}"
         self.request_games(url=my_url)
-        if "<p>Requested link is invalid.</p>" in self.page_request:
+        if "<title>jstris.jezevec10.com | 522: Connection timed out</title>\n" in self.page_request:
+            self.has_error = True
+            self.error_message = "Connection error: can't connect to jstris right now"
+        elif "<p>Requested link is invalid.</p>" in self.page_request:
             self.has_error = True
             self.error_message = f"{self.username}: Not valid username"
 

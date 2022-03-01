@@ -685,7 +685,7 @@ if __name__ == "__main__":
     if not os.path.exists('playerstats'):
         os.mkdir('playerstats')
 
-    clear_unaccessed_replays.start()
+    # clear_unaccessed_replays.start()
 
     BadgerBot.add_cog(GeneralMaintenance(BadgerBot))
     BadgerBot.add_cog(IndivCommands(BadgerBot))

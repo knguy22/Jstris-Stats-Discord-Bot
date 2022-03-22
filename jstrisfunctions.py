@@ -464,7 +464,7 @@ class VersusParameterInit:
         :return:
         """
 
-        data_criteria = ['date', 'apm', 'spm', 'pps', 'wapm', 'wspm', "wpps", 'ren', 'time', 'position', 'players']
+        data_criteria = ['date', 'apm', 'spm', 'pps', 'wapm', 'wspm', "wpps", 'ren', 'time', 'pos', 'players']
 
         comparison_operator = ""
         if ">=" in my_comp:

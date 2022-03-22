@@ -375,7 +375,6 @@ class IndivParameterInit:
                     self.has_error = True
                     self.error_message = f'Error: comparison value is not numeric: "{comparison_value}"'
         elif not self.comparisons and comparison_operator:
-            print(comparison_operator, my_comp)
             self.has_error = True
             self.error_message = f'Error: comparison parameter "{comparison_param}" is not a valid parameter in your given gamemode: "{self.gamemode}"'
 
@@ -490,7 +489,7 @@ class VersusParameterInit:
             if comparison_param == "date":
                 a = DateInit(comparison_value, comparison_value)
                 if not a.has_error:
-                    self.comparisons.append({'param': 'gtime', 'value': DateInit.str_to_datetime(a.first),
+                    self.comparisons.append({'param': 'date (CET)', 'value': DateInit.str_to_datetime(a.first),
                                              'operator': comparison_operator})
                 else:
                     self.has_error = True
@@ -619,7 +618,7 @@ def live_games_weighted_avg(list_of_games: list, offset: int, param: str) -> flo
     time_summation = 0
     while c < offset:
         summation += list_of_games[c][param]
-        time_summation += list_of_games[c]["gametime"]
+        time_summation += list_of_games[c]["time"]
         c += 1
         if c == len(list_of_games):
             break
@@ -774,7 +773,7 @@ async def opponents_matchups(list_of_games: list, max_games: int) -> dict:
             all_opponents[player_name]['wapm'] += game['attack']
             all_opponents[player_name]['wspm'] += game['sent']
             all_opponents[player_name]['wpps'] += game['pcs']
-            all_opponents[player_name]['time_sum'] += game['gametime']
+            all_opponents[player_name]['time_sum'] += game['time']
             all_opponents[player_name]['ren'] += game['ren']
 
     # Finding min and max time for each opponent
@@ -786,7 +785,7 @@ async def opponents_matchups(list_of_games: list, max_games: int) -> dict:
             if game['vs'] is None or game['players'] != 2:
                 continue
             if game['vs'].lower() == opp:
-                list_of_dates.append(DateInit.str_to_datetime(game['gtime']))
+                list_of_dates.append(DateInit.str_to_datetime(game['date (CET)']))
 
         # Finding min and max time for each opponent
         min_max_time = await new_first_last_date(list_of_dates)

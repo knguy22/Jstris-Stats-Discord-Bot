@@ -5,7 +5,7 @@ import pytz
 
 import jstrisfunctions
 import jstrishtml
-from jstrisfunctions import DateInit
+from jstrisfunctions import DateInit, IndivParameterInit
 
 from jstrisuser import UserLiveGames
 from jstrisuser import UserIndivGames
@@ -107,6 +107,7 @@ class CacheInit:
         await self.reduce_fetched_replays_vs()
         self.fetched_and_cached_replays = self.fetched_replays + self.cached_replays
         self.fetched_and_cached_replays = await self.duplicate_replay_deleter(self.fetched_and_cached_replays)
+        await self.rename_replays_stats_vs()
 
         # Checks for problems or errors with all replays
         if self.fetched_user_class.has_error:
@@ -117,7 +118,7 @@ class CacheInit:
             self.error_message = f"Error: {self.username} has no played games"
 
         if not self.has_error:
-            list_of_dates = [i['gtime'] for i in self.fetched_and_cached_replays]
+            list_of_dates = [i['date (CET)'] for i in self.fetched_and_cached_replays]
             final_date = await jstrisfunctions.new_first_last_date(list_of_dates)
 
             # Checks if the versus filter could not find a first or last date
@@ -231,6 +232,15 @@ class CacheInit:
 
         self.fetched_replays = reduced_all_stats
 
+    async def rename_replays_stats_vs(self) -> None:
+        for i in self.fetched_and_cached_replays:
+            if 'gametime' in i:
+                i['time'] = i['gametime']
+                i.pop('gametime')
+            if 'gtime' in i:
+                i['date (CET)'] = i['gtime']
+                i.pop('gtime')
+                
     async def filter_period_vs(self) -> list:
         """
         :return: new_list_of_games
@@ -250,13 +260,13 @@ class CacheInit:
         # true date is later than the stored replay's date
 
         for i, j in enumerate(self.fetched_and_cached_replays):
-            curr_date = jstrisfunctions.DateInit.str_to_datetime(j['gtime'])
+            curr_date = jstrisfunctions.DateInit.str_to_datetime(j['date (CET)'])
             if curr_date > last_date:
                 pass
-            elif first_date < jstrisfunctions.DateInit.str_to_datetime(j['gtime']) < last_date:
+            elif first_date < jstrisfunctions.DateInit.str_to_datetime(j['date (CET)']) < last_date:
                 if prev_date > curr_date:
                     new_list_of_games.append(j)
-                    prev_date = jstrisfunctions.DateInit.str_to_datetime(new_list_of_games[-1]['gtime'])
+                    prev_date = jstrisfunctions.DateInit.str_to_datetime(new_list_of_games[-1]['date (CET)'])
                 else:
                     new_list_of_games += games_below_first_date
                     games_below_first_date = []
@@ -273,9 +283,9 @@ class CacheInit:
         :return: self.returned_replays
         """
         for i, j in enumerate(self.returned_replays):
-            j['apm'] = round(j['attack'] / j['gametime'] * 60, 2)
-            j['spm'] = round(j['sent'] / j['gametime'] * 60, 2)
-            j['pps'] = round(j['pcs'] / j['gametime'], 2)
+            j['apm'] = round(j['attack'] / j['time'] * 60, 2)
+            j['spm'] = round(j['sent'] / j['time'] * 60, 2)
+            j['pps'] = round(j['pcs'] / j['time'], 2)
             self.returned_replays[i] = j
 
     async def reduced_fetched_replays_indiv(self) -> None:
@@ -335,12 +345,15 @@ class CacheInit:
         if not operator:
             return None
 
-        if param == "date (CET)" or param == 'gtime':
+        if param == 'date (CET)':
             for i, j in enumerate(self.returned_replays):
                 self.returned_replays[i][param] = DateInit.str_to_datetime(j[param])
         elif param == 'time':
             for i, j in enumerate(self.returned_replays):
-                self.returned_replays[i][param] = jstrishtml.clock_to_seconds(j[param])
+                if type(self.params) == jstrisfunctions.VersusParameterInit:
+                    self.returned_replays[i][param] = j[param]
+                elif type(self.params) == jstrisfunctions.IndivParameterInit:
+                    self.returned_replays[i][param] = jstrishtml.clock_to_seconds(j[param])
 
         filtered_replays = []
         for i in replays:
@@ -359,12 +372,13 @@ class CacheInit:
                 filtered_replays.append(i)
         self.returned_replays = filtered_replays
 
-        if param == "date (CET)" or param == 'gtime':
+        if param == 'date (CET)':
             for i, j in enumerate(self.returned_replays):
                 self.returned_replays[i][param] = DateInit.datetime_to_str_naive(j[param])
         elif param == 'time':
-            for i, j in enumerate(self.returned_replays):
-                self.returned_replays[i][param] = jstrishtml.seconds_to_clock(j[param])
+            if type(self.params) == jstrisfunctions.IndivParameterInit:
+                for i, j in enumerate(self.returned_replays):
+                    self.returned_replays[i][param] = jstrishtml.seconds_to_clock(j[param])
 
     @staticmethod
     async def replace_decimals(obj):

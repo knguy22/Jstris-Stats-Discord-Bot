@@ -309,7 +309,7 @@ class VsCommands(commands.Cog):
             return None
 
         # Calculate dates
-        list_of_dates = [i['gtime'] for i in searched_games.returned_replays]
+        list_of_dates = [i['date (CET)'] for i in searched_games.returned_replays]
         dates = await jstrisfunctions.new_first_last_date(list_of_dates)
         first_date = dates[0]
         last_date = dates[1]
@@ -325,7 +325,7 @@ class VsCommands(commands.Cog):
                                                                    'sent') * 60, 2)
         weight_pps = round(jstrisfunctions.live_games_weighted_avg(searched_games.returned_replays, param_init.offset,
                                                                    'pcs'), 2)
-        time_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'gametime')
+        time_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'time')
         players_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'players')
         pos_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'pos')
         won_games = jstrisfunctions.games_won(searched_games.returned_replays, param_init.offset)
@@ -659,7 +659,7 @@ async def totalgametime(ctx, username: str, first_date='0001-01-01 00:00:01', la
             if 'time' in replay.keys():
                 gamemode_total_time += jstrishtml.clock_to_seconds(replay['time'])
             elif gamemode == 'vs':
-                gamemode_total_time += float(replay['gametime'])
+                gamemode_total_time += float(replay['time'])
             elif gamemode == 'pcmode':
                 gamemode_total_time += replay['blocks'] / replay['pps']
             elif gamemode == 'ultra':

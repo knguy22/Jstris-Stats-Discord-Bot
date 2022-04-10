@@ -329,6 +329,7 @@ class VsCommands(commands.Cog):
         players_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'players')
         pos_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'pos')
         won_games = jstrisfunctions.games_won(searched_games.returned_replays, param_init.offset)
+        games_per_day = round(len(searched_games.returned_replays) / (jstrisfunctions.DateInit.str_to_datetime(last_date) - jstrisfunctions.DateInit.str_to_datetime(first_date)).days, 3)
 
         # Discord formatting
         embed = await embed_init(username)
@@ -348,6 +349,7 @@ class VsCommands(commands.Cog):
                                                      f"({won_games / len(searched_games.returned_replays) * 100:.2f}%)",
                         inline=False)
         embed.add_field(name="**number of games:**", value=str(len(searched_games.returned_replays)), inline=False)
+        embed.add_field(name="**games per day:**", value=str(games_per_day), inline=False)
         embed.set_footer(text='All of these values are averages. Weighted means weighted by time, not game.')
         await ctx.send(ctx.author.mention)
         await ctx.send(embed=embed)
@@ -555,6 +557,9 @@ class VsCommands(commands.Cog):
         embed = await embed_init(username)
 
         if opponent in list_of_opponents:
+            first_date = list_of_opponents[opponent]["min_time"]
+            last_date = list_of_opponents[opponent]["max_time"]
+            games_per_day = round(list_of_opponents[opponent]["games"] / (jstrisfunctions.DateInit.str_to_datetime(last_date) - jstrisfunctions.DateInit.str_to_datetime(first_date)).days, 3)
             winrate = list_of_opponents[opponent]["won"] / list_of_opponents[opponent]["games"] * 100
             won_games = list_of_opponents[opponent]['won']
             has_opponent = True
@@ -573,6 +578,7 @@ class VsCommands(commands.Cog):
                             inline=True)
             embed.add_field(name='**Earliest game (CET):**', value=list_of_opponents[opponent]["min_time"], inline=True)
             embed.add_field(name='**Latest game (CET):**', value=list_of_opponents[opponent]["max_time"], inline=True)
+            embed.add_field(name='**Games per day:**', value=games_per_day, inline=True)
             embed.set_footer(
                 text=' Weighted means weighted by time, not game. Note: Jstris will delete replays over time, '
                      'and they will not be counted here.')

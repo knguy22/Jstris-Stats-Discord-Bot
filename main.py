@@ -329,7 +329,7 @@ class VsCommands(commands.Cog):
         players_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'players')
         pos_avg = jstrisfunctions.live_games_avg(searched_games.returned_replays, param_init.offset, 'pos')
         won_games = jstrisfunctions.games_won(searched_games.returned_replays, param_init.offset)
-        games_per_day = round(len(searched_games.returned_replays) / (jstrisfunctions.DateInit.str_to_datetime(last_date) - jstrisfunctions.DateInit.str_to_datetime(first_date)).days, 3)
+        games_per_day = round(len(searched_games.returned_replays) / (((jstrisfunctions.DateInit.str_to_datetime(last_date) - jstrisfunctions.DateInit.str_to_datetime(first_date)).days) + 1), 3)
 
         # Discord formatting
         embed = await embed_init(username)
@@ -559,7 +559,7 @@ class VsCommands(commands.Cog):
         if opponent in list_of_opponents:
             first_date = list_of_opponents[opponent]["min_time"]
             last_date = list_of_opponents[opponent]["max_time"]
-            games_per_day = round(list_of_opponents[opponent]["games"] / (jstrisfunctions.DateInit.str_to_datetime(last_date) - jstrisfunctions.DateInit.str_to_datetime(first_date)).days, 3)
+            games_per_day = round(list_of_opponents[opponent]["games"] / ((jstrisfunctions.DateInit.str_to_datetime(last_date) - jstrisfunctions.DateInit.str_to_datetime(first_date)).days + 1), 3)
             winrate = list_of_opponents[opponent]["won"] / list_of_opponents[opponent]["games"] * 100
             won_games = list_of_opponents[opponent]['won']
             has_opponent = True

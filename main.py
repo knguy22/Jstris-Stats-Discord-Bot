@@ -661,15 +661,15 @@ async def totalgametime(ctx, username: str, first_date='0001-01-01 00:00:01', la
 
         gamemode_total_time = 0
         for replay in curr_gamemode.returned_replays:
-
-            if 'time' in replay.keys():
-                gamemode_total_time += jstrishtml.clock_to_seconds(replay['time'])
-            elif gamemode == 'vs':
+            print(replay)
+            if gamemode == 'vs':
                 gamemode_total_time += float(replay['time'])
             elif gamemode == 'pcmode':
                 gamemode_total_time += replay['blocks'] / replay['pps']
             elif gamemode == 'ultra':
                 gamemode_total_time += 120
+            else:
+                gamemode_total_time += jstrishtml.clock_to_seconds(replay['time'])
         embed.add_field(name=f'**{gamemode}:**', value=jstrishtml.seconds_to_timestr(gamemode_total_time), inline=True)
 
         total_time += gamemode_total_time

@@ -661,7 +661,6 @@ async def totalgametime(ctx, username: str, first_date='0001-01-01 00:00:01', la
 
         gamemode_total_time = 0
         for replay in curr_gamemode.returned_replays:
-            print(replay)
             if gamemode == 'vs':
                 gamemode_total_time += float(replay['time'])
             elif gamemode == 'pcmode':

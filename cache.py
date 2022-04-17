@@ -17,7 +17,6 @@ import aiofiles
 from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
-print(logging.getLogger().hasHandlers())
 if not logging.getLogger().hasHandlers():
     logging.basicConfig(level=logging.INFO, filename="logjstris.log", datefmt='%m/%d/%Y %H:%M:%S',
                     format='%(levelname)s: %(module)s: %(message)s; %(asctime)s')

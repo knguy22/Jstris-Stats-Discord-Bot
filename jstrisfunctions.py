@@ -7,6 +7,9 @@ import requests
 import time
 
 logger = logging.getLogger(__name__)
+if not logging.getLogger().hasHandlers():
+    logging.basicConfig(level=logging.INFO, filename="logjstris.log", datefmt='%m/%d/%Y %H:%M:%S',
+                    format='%(levelname)s: %(module)s: %(message)s; %(asctime)s')
 
 
 # Returns self.first and self.last as dates in the form of:

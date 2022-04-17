@@ -7,7 +7,11 @@ import datetime
 import pytz
 
 import logging
+
 logger = logging.getLogger(__name__)
+if not logging.getLogger().hasHandlers():
+    logging.basicConfig(level=logging.INFO, filename="logjstris.log", datefmt='%m/%d/%Y %H:%M:%S',
+                    format='%(levelname)s: %(module)s: %(message)s; %(asctime)s')
 
 with open('header.txt', 'r') as h:
     header = h.readline()
@@ -186,7 +190,7 @@ class UserLiveGames:
             return None
         
         self.page_request = r.json()
-        time.sleep(1.5)
+        time.sleep(2)
         if "error" in r.text:
             self.has_error = True
             self.error_message = f"{self.username}: Not valid username"

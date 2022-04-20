@@ -1,3 +1,4 @@
+from ast import alias
 import os
 
 import discord
@@ -15,6 +16,7 @@ import asyncio
 import aiofiles
 import json
 import random
+import statistics
 
 intents = discord.Intents.default()
 intents.members = True
@@ -190,6 +192,42 @@ class IndivCommands(commands.Cog):
             await ctx.send(embed=embed)
         logging.info("Finishing average")
 
+    @commands.command(aliases=['med'])
+    async def median(self, ctx, username: str, *args) -> None:
+
+        my_ps = IndivParameterInit(args)
+
+        if my_ps.game in ('1', '3', '4'):
+            data_criteria = ["time", "blocks", "pps", "finesse"]
+        elif my_ps.game == '5':
+            data_criteria = ["score", "blocks", "ppb", "pps", "finesse"]
+        elif my_ps.game == '7':
+            data_criteria = ["tsds", "time", "20tsd time", "blocks", "pps"]
+        elif my_ps.game == '8':
+            data_criteria = ["pcs", "time", "blocks", "pps", "finesse"]
+        # Default sprint
+        else:
+            data_criteria = ["time", "blocks", "pps", "finesse", "date"]
+
+        logging.info("Beginning median")
+        if not await GeneralMaintenance.num_processes_init(ctx):
+            return None
+        
+        init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
+        searched_games = CacheInit(username, my_ps, lock)
+        await searched_games.fetch_all_games()
+
+        await GeneralMaintenance.num_processes_finish()
+        await init_message.delete()
+        await ctx.send(ctx.author.mention)
+
+        if searched_games.has_error:
+            await ctx.send(searched_games.error_message)
+        else:
+            embed = await self.median_indiv_embed(username, data_criteria, searched_games.returned_replays)
+            await ctx.send(embed=embed)
+        logging.info("Finishing median")
+    
     @commands.command()
     async def randomindiv(self, ctx, username: str, *args) -> None:
         logging.info("Beginning randomindiv")
@@ -280,6 +318,30 @@ class IndivCommands(commands.Cog):
         embed.add_field(name='**last date (CET):**', value=max_date, inline=False)
 
         return embed
+    
+    @staticmethod
+    async def median_indiv_embed(username, data_criteria, games):
+        embed = await embed_init(username)
+
+        for criteria in data_criteria:
+            if criteria not in ("time", "20tsd time"):
+                games_criteria = [x[criteria] for x in games]
+                data_avg = statistics.median(games_criteria)
+            else:
+                games_criteria = [jstrishtml.clock_to_seconds(x[criteria]) for x in games if x[criteria] != '-']
+                data_avg = statistics.median(games_criteria)
+                data_avg = jstrishtml.seconds_to_clock(data_avg)
+            embed.add_field(name=f"**{criteria}**", value=str(data_avg), inline=False)
+
+        embed.add_field(name='**games:**', value=str(len(games)), inline=False)
+
+        list_of_dates = list(map(lambda x: jstrisfunctions.DateInit.str_to_datetime(x['date (CET)']), games))
+        min_date = jstrisfunctions.DateInit.datetime_to_str_naive(min(list_of_dates))
+        max_date = jstrisfunctions.DateInit.datetime_to_str_naive(max(list_of_dates))
+        embed.add_field(name='**first date (CET):**', value=min_date, inline=False)
+        embed.add_field(name='**last date (CET):**', value=max_date, inline=False)
+
+        return embed
 
 
 # VERSUS COMMANDS
@@ -354,6 +416,64 @@ class VsCommands(commands.Cog):
         await ctx.send(ctx.author.mention)
         await ctx.send(embed=embed)
         logging.info("Finishing vs")
+        
+    @commands.command(aliases = ['vsmed', 'vs_med'])
+    async def vs_median(self, ctx, username: str, *args) -> None:
+        logging.info("Beginning vs_median")
+        if not await GeneralMaintenance.num_processes_init(ctx):
+            return None
+
+        param_init = VersusParameterInit(args)
+
+        init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
+        searched_games = CacheInit(username, param_init, lock)
+        await searched_games.fetch_all_games()
+        searched_games.returned_replays = searched_games.returned_replays[:param_init.offset]
+        await GeneralMaintenance.num_processes_finish()
+
+        await init_message.delete()
+        if searched_games.has_error:
+            await ctx.send(ctx.author.mention)
+            await ctx.send(searched_games.error_message)
+            return None
+
+        # Calculate dates
+        list_of_dates = [i['date (CET)'] for i in searched_games.returned_replays]
+        dates = await jstrisfunctions.new_first_last_date(list_of_dates)
+        first_date = dates[0]
+        last_date = dates[1]
+
+        # Calculates averages
+        apm_med = statistics.median([x['apm'] for x in searched_games.returned_replays])
+        spm_med = statistics.median([x['spm'] for x in searched_games.returned_replays])
+        pps_med = statistics.median([x['pps'] for x in searched_games.returned_replays])
+        ren_med = statistics.median([x['ren'] for x in searched_games.returned_replays])
+        time_med = statistics.median([x['time'] for x in searched_games.returned_replays])
+        players_med= statistics.median([x['players'] for x in searched_games.returned_replays])
+        pos_med = statistics.median([x['pos'] for x in searched_games.returned_replays])
+        won_games = jstrisfunctions.games_won(searched_games.returned_replays, param_init.offset)
+        games_per_day = round(len(searched_games.returned_replays) / (((jstrisfunctions.DateInit.str_to_datetime(last_date) - jstrisfunctions.DateInit.str_to_datetime(first_date)).days) + 1), 3)
+
+        # Discord formatting
+        embed = await embed_init(username)
+        embed.add_field(name="**apm:**", value=str(apm_med), inline=True)
+        embed.add_field(name="**spm:**", value=str(spm_med), inline=True)
+        embed.add_field(name="**pps:**", value=str(pps_med), inline=True)
+        embed.add_field(name="**max combo:**", value=str(ren_med), inline=True)
+        embed.add_field(name="**time (seconds):**", value=str(time_med), inline=True)
+        embed.add_field(name="**final position:**", value=str(pos_med), inline=True)
+        embed.add_field(name="**players:**", value=str(players_med), inline=True)
+        embed.add_field(name="**first game (CET):**", value=first_date, inline=True)
+        embed.add_field(name="**last game (CET):**", value=last_date, inline=True)
+        embed.add_field(name="**games won:**", value=f"{won_games}  "
+                                                     f"({won_games / len(searched_games.returned_replays) * 100:.2f}%)",
+                        inline=False)
+        embed.add_field(name="**number of games:**", value=str(len(searched_games.returned_replays)), inline=False)
+        embed.add_field(name="**games per day:**", value=str(games_per_day), inline=False)
+        embed.set_footer(text='All of these values are medians.')
+        await ctx.send(ctx.author.mention)
+        await ctx.send(embed=embed)
+        logging.info("Finishing vs_median")
 
     @commands.command()
     async def allmatchups(self, ctx, username: str, *args) -> None:

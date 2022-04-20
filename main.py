@@ -48,7 +48,7 @@ class GeneralMaintenance(commands.Cog):
                        "1D54qjRTNmkOBXcvff1vpiph5E5txnd6J6R2oI9e6ZMM/edit?usp=sharing")
         logging.info("Finish help")
 
-    @commands.command()
+    @commands.command(aliases = ['numcommands', 'numcommand'])
     async def numprocesses(self, ctx) -> None:
         await ctx.send(f'{threading.active_count()-3} active commands')
 

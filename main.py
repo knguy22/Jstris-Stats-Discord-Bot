@@ -3,6 +3,7 @@ import os
 
 import discord
 from discord.ext import commands, tasks
+import threading
 
 import logging
 
@@ -22,8 +23,6 @@ intents = discord.Intents.default()
 intents.members = True
 description = 'Third party BadgerBot to quickly gather Jstris stats on individual players'
 BadgerBot = commands.Bot(command_prefix='?', description=description, intents=intents, help_command=None)
-
-num_processes = 0
 
 lock = asyncio.Lock()
 
@@ -51,8 +50,7 @@ class GeneralMaintenance(commands.Cog):
 
     @commands.command()
     async def numprocesses(self, ctx) -> None:
-        global num_processes
-        await ctx.send(f'{num_processes} processes')
+        await ctx.send(f'{threading.active_count()-3} active commands')
 
     @staticmethod
     async def num_processes_init(ctx) -> bool:
@@ -62,28 +60,16 @@ class GeneralMaintenance(commands.Cog):
         :param ctx:
         :return: bool: option on whether to execute a new CacheInit or not
         """
-        global num_processes
+        
+        num_processes = threading.active_count() - 3
         logging.info(f"Checking num processes: {num_processes}")
-        num_processes += 1
-        if num_processes > 5:
-            num_processes -= 1
+        if num_processes >= 2:
             logging.info(f"Max processes reached: {num_processes}")
             await ctx.send(ctx.author.mention)
             await ctx.send("Sorry, currently busy handling other requests. Please try again in a few minutes.")
             return False
         logging.info(f"Added one more process: {num_processes}")
         return True
-
-    @staticmethod
-    async def num_processes_finish() -> None:
-        """
-        Subtract num_processes by 1 when a process is finished
-        :return:
-        """
-
-        global num_processes
-        num_processes -= 1
-        logging.info(f"Finish process: {num_processes}")
 
     @commands.command()
     async def prune_user(self, ctx, username) -> None:
@@ -119,7 +105,6 @@ class IndivCommands(commands.Cog):
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
         searched_games = CacheInit(username, my_ps, lock)
         await searched_games.fetch_all_games()
-        await GeneralMaintenance.num_processes_finish()
 
         await init_message.delete()
         if searched_games.has_error:
@@ -144,7 +129,6 @@ class IndivCommands(commands.Cog):
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
         searched_games = CacheInit(username, my_ps, lock)
         await searched_games.fetch_all_games()
-        await GeneralMaintenance.num_processes_finish()
 
         await init_message.delete()
         if searched_games.has_error:
@@ -181,7 +165,6 @@ class IndivCommands(commands.Cog):
         searched_games = CacheInit(username, my_ps, lock)
         await searched_games.fetch_all_games()
 
-        await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
         await ctx.send(ctx.author.mention)
 
@@ -217,7 +200,6 @@ class IndivCommands(commands.Cog):
         searched_games = CacheInit(username, my_ps, lock)
         await searched_games.fetch_all_games()
 
-        await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
         await ctx.send(ctx.author.mention)
 
@@ -240,7 +222,6 @@ class IndivCommands(commands.Cog):
         searched_games = CacheInit(username, my_ps, lock)
         await searched_games.fetch_all_games()
 
-        await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
 
         searched_games.returned_replays = [i for i in searched_games.returned_replays if i['replay'] != '- ']
@@ -268,7 +249,6 @@ class IndivCommands(commands.Cog):
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
         searched_games = CacheInit(username, my_ps, lock)
         await searched_games.fetch_all_games()
-        await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
 
         if searched_games.has_error:
@@ -362,7 +342,6 @@ class VsCommands(commands.Cog):
         searched_games = CacheInit(username, param_init, lock)
         await searched_games.fetch_all_games()
         searched_games.returned_replays = searched_games.returned_replays[:param_init.offset]
-        await GeneralMaintenance.num_processes_finish()
 
         await init_message.delete()
         if searched_games.has_error:
@@ -429,7 +408,6 @@ class VsCommands(commands.Cog):
         searched_games = CacheInit(username, param_init, lock)
         await searched_games.fetch_all_games()
         searched_games.returned_replays = searched_games.returned_replays[:param_init.offset]
-        await GeneralMaintenance.num_processes_finish()
 
         await init_message.delete()
         if searched_games.has_error:
@@ -487,7 +465,6 @@ class VsCommands(commands.Cog):
         searched_games = CacheInit(username, param_init, lock)
         await searched_games.fetch_all_games()
 
-        await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
         if searched_games.has_error:
             await ctx.send(ctx.author.mention)
@@ -542,14 +519,12 @@ class VsCommands(commands.Cog):
             await init_message.delete()
             await ctx.send(ctx.author.mention)
             await ctx.send(f'Not valid username: {username}')
-            await GeneralMaintenance.num_processes_finish()
             return None
 
         if not await jstrisfunctions.check_user_exists(opponent):
             await init_message.delete()
             await ctx.send(ctx.author.mention)
             await ctx.send(f'Not valid username: {opponent}')
-            await GeneralMaintenance.num_processes_finish()
             return None
 
         # Username's games
@@ -561,7 +536,6 @@ class VsCommands(commands.Cog):
             await init_message.delete()
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
-            await GeneralMaintenance.num_processes_finish()
             return None
         list_of_opponents = await jstrisfunctions.opponents_matchups(searched_games.returned_replays, param_init.offset)
         embed1 = await VsCommands.vs_matchup_embed(ctx, username, opponent, list_of_opponents)
@@ -576,16 +550,13 @@ class VsCommands(commands.Cog):
             await init_message.delete()
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
-            await GeneralMaintenance.num_processes_finish()
             return None
         list_of_opponents = await jstrisfunctions.opponents_matchups(searched_games.returned_replays, param_init.offset)
         embed2 = await VsCommands.vs_matchup_embed(ctx, opponent, username, list_of_opponents)
 
         # Finalizing
 
-        await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
-
         await ctx.send(ctx.author.mention)
         await ctx.send(embed=embed1)
         await ctx.send(embed=embed2)
@@ -602,7 +573,6 @@ class VsCommands(commands.Cog):
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
         searched_games = CacheInit(username, my_ps, lock)
         await searched_games.fetch_all_games()
-        await GeneralMaintenance.num_processes_finish()
         await init_message.delete()
 
         if searched_games.has_error:
@@ -640,7 +610,6 @@ class VsCommands(commands.Cog):
             await init_message.delete()
             await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
-            await GeneralMaintenance.num_processes_finish()
             return None
 
         sorted_replays = await jstrisfunctions.opponents_matchups_replays(searched_games.returned_replays)
@@ -649,7 +618,6 @@ class VsCommands(commands.Cog):
             await init_message.delete()
             await ctx.send(ctx.author.mention)
             await ctx.send(f'No played games of {username} against {opponent}')
-            await GeneralMaintenance.num_processes_finish()
             return None
 
         list_of_replay_links = []
@@ -666,7 +634,6 @@ class VsCommands(commands.Cog):
 
         with open("versusmatchupreplays.txt", "rb") as file:
             await init_message.delete()
-            await GeneralMaintenance.num_processes_finish()
             await ctx.send(ctx.author.mention)
             await ctx.send(f'Your available replays of {username} vs {opponent} are:', file=discord.File(file, f'{username} vs {opponent}.txt'))
 
@@ -706,7 +673,6 @@ class VsCommands(commands.Cog):
             has_opponent = False
 
         if not has_opponent:
-            await GeneralMaintenance.num_processes_finish()
             await ctx.send(ctx.author.mention)
             await ctx.send(f"No found games of {username} vs {opponent}.")
             return None
@@ -767,7 +733,6 @@ async def totalgametime(ctx, username: str, first_date='0001-01-01 00:00:01', la
         await init_message.delete()
         await ctx.send(ctx.author.mention)
         await ctx.send(f'Not valid username: {username}')
-        await GeneralMaintenance.num_processes_finish()
         return None
 
     for gamemode in all_gamemodes:
@@ -800,10 +765,13 @@ async def totalgametime(ctx, username: str, first_date='0001-01-01 00:00:01', la
                           'Total time does not count uncompleted replays. Due to how jstris stores replays, only the '
                           'top 200 pcmode and 20tsd replays will be counted.')
 
-    await GeneralMaintenance.num_processes_finish()
     await init_message.delete()
     await ctx.send(ctx.author.mention)
     await ctx.send(embed=embed)
+    
+@BadgerBot.command()
+async def threads(ctx):
+    await ctx.send(threading.active_count())
 
 if __name__ == "__main__":
 

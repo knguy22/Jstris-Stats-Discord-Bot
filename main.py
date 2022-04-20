@@ -769,9 +769,6 @@ async def totalgametime(ctx, username: str, first_date='0001-01-01 00:00:01', la
     await ctx.send(ctx.author.mention)
     await ctx.send(embed=embed)
     
-@BadgerBot.command()
-async def threads(ctx):
-    await ctx.send(threading.active_count())
 
 if __name__ == "__main__":
 

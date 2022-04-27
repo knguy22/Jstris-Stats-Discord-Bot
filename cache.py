@@ -98,10 +98,6 @@ class CacheInit:
         self.fetched_user_class = await LOOP.run_in_executor(ThreadPoolExecutor(),
                                                              UserLiveGames, self.username, 100000000000,
                                                              first_date, last_date)
-        if self.fetched_user_class.has_error == True and self.fetched_user_class.error_message == "Connection error: can't connect to jstris right now":
-            self.has_error = True
-            self.error_message = self.fetched_user_class.error_message
-            return None
         self.fetched_replays = self.fetched_user_class.all_replays
 
         # Processes replays; note: fetched_replays must be added before cached_replays in order to maintain proper
@@ -161,10 +157,6 @@ class CacheInit:
         self.fetched_user_class = await LOOP.run_in_executor(ThreadPoolExecutor(), UserIndivGames, self.username,
                                                              self.params.game, self.params.mode, first_date,
                                                              last_date)
-        if self.fetched_user_class.has_error == True and self.fetched_user_class.error_message == "Connection error: can't connect to jstris right now":
-            self.has_error = True
-            self.error_message = self.fetched_user_class.error_message
-            return None
         self.fetched_replays = self.fetched_user_class.all_replays
 
         # Processes requested replays and merges with cached replays

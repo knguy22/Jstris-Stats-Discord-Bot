@@ -181,19 +181,19 @@ class UserLiveGames:
             self.still_searching = False
 
     def check_username_exists(self) -> None:
-        my_url = f"https://jstris.jezevec10.com/api/u/{self.username}/live/games?offset=0"
-        r = self.my_session.get(my_url)
+        time.sleep(2)
         
-        if "<title>jstris.jezevec10.com | 522: Connection timed out</title>\n" in r.text:
+        my_url = f"https://jstris.jezevec10.com/u/{self.username}"
+        self.request_games(url=my_url)
+        if "<title>jstris.jezevec10.com | 522: Connection timed out</title>\n" in self.page_request:
             self.has_error = True
             self.error_message = "Connection error: can't connect to jstris right now"
-            return None
-        
-        self.page_request = r.json()
-        time.sleep(2)
-        if "error" in r.text:
+        elif "<p>Requested link is invalid.</p>" in self.page_request:
             self.has_error = True
             self.error_message = f"{self.username}: Not valid username"
+        elif '<h1 style="font-size: 32px;">This account was renamed.</h1>' in self.page_request:
+            self.has_error = True
+            self.error_message = f"{self.username}: This account was renamed"
 
 # Returns all replay data of a username's specific gamemode
 # game: 1 = sprint, 3 = cheese, 4 = survival, 5 = ultra, 7 = 20TSD, 8 = PC Mode

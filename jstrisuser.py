@@ -410,6 +410,10 @@ class UserIndivGames:
         elif "<p>Requested link is invalid.</p>" in self.page_request:
             self.has_error = True
             self.error_message = f"{self.username}: Not valid username"
+        elif '<h1 style="font-size: 32px;">This account was renamed.</h1>' in self.page_request:
+            self.has_error = True
+            self.error_message = f"{self.username}: This account was renamed"
+        
 
     def data_criteria_init(self) -> None:
 
@@ -565,4 +569,3 @@ class UserIndivGames:
 
 if __name__ == "__main__":
     pass
-

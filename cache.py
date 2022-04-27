@@ -145,6 +145,9 @@ class CacheInit:
         Fetches single player replays, stored in cache or not yet stored in cache
         :return:
         """
+        
+        final_date = DateInit.datetime_to_str_naive(datetime.datetime.now(tz=pytz.timezone('CET')))[:-7]
+        
         await self.fetch_replays_from_cache()
 
         if not self.cached_date:
@@ -179,13 +182,10 @@ class CacheInit:
 
         # Stores all replays into cache
         if not self.has_error:
-            list_of_dates = [i['date (CET)'] for i in self.fetched_and_cached_replays]
-            final_date = max([jstrisfunctions.DateInit.str_to_datetime(i) for i in list_of_dates])
-            final_date = DateInit.datetime_to_str_naive(final_date)
 
             self.user_dict[await self.params_to_str_key(self.params)] = \
                 {'date': final_date, 'replays': self.fetched_and_cached_replays,
-                 'date accessed': DateInit.datetime_to_str_naive(datetime.datetime.now(tz=pytz.timezone('CET')))[:-7]}
+                 'date accessed': final_date}
             await self.store_player_stats(self.user_dict)
 
             # Returns replays

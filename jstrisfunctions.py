@@ -676,7 +676,7 @@ def first_last_date(list_of_dates: list) -> tuple:
     return min_time, max_time
 
 
-async def new_first_last_date(list_of_dates: list) -> Union(tuple, bool):
+async def new_first_last_date(list_of_dates: list) -> Union[tuple, bool]:
 
     # Higher indices now mean ascending order
     # Skip pruning if there are only two replays

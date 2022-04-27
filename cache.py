@@ -1,6 +1,7 @@
 import json
 
 import datetime
+from typing import Union
 import pytz
 
 import jstrisfunctions
@@ -22,7 +23,7 @@ if not logging.getLogger().hasHandlers():
                     format='%(levelname)s: %(module)s: %(message)s; %(asctime)s')
 
 class CacheInit:
-    def __init__(self, username: str, params: [jstrisfunctions.VersusParameterInit, jstrisfunctions.IndivParameterInit],
+    def __init__(self, username: str, params: Union[jstrisfunctions.VersusParameterInit, jstrisfunctions.IndivParameterInit],
                  lock: asyncio.Lock):
         self.username = username.lower()
         self.params = params

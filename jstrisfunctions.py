@@ -1,3 +1,4 @@
+from typing import Union
 import datetime
 from re import L
 import pytz
@@ -64,7 +65,7 @@ class DateInit:
         except ValueError:
             return False
 
-    def calendar_to_date(self, string: str) -> [None, str]:
+    def calendar_to_date(self, string: str) -> Union[None, str]:
 
         num_year = datetime.datetime.now().year
         num_day = '01'
@@ -95,7 +96,7 @@ class DateInit:
             num_day = "0" + num_day
         return f"{num_year}-{num_month}-{num_day} 00:00:00"
 
-    def is_time_ago_to_date(self, string: str) -> [None, str]:
+    def is_time_ago_to_date(self, string: str) -> Union[None, str]:
         now = datetime.datetime.now(tz=pytz.timezone('CET'))
         num_days = self.is_time_ago_to_days(string)
         if num_days is None:
@@ -107,7 +108,7 @@ class DateInit:
         return my_date
 
     @staticmethod
-    def is_time_ago_to_days(string: str) -> [None, int]:
+    def is_time_ago_to_days(string: str) -> Union[None, int]:
         str_list = string.split(" ")
         num_days = 0
         num_months = 0
@@ -565,7 +566,7 @@ def most_(list_of_runs: list, my_param: str) -> dict:
     return final_run
 
 
-def average_(list_of_runs: list, my_param: str) -> [float, str]:
+def average_(list_of_runs: list, my_param: str) -> Union[float, str]:
 
     if my_param not in ("time", "20tsd time"):
         list_of_stats = [x[my_param] for x in list_of_runs]
@@ -675,7 +676,7 @@ def first_last_date(list_of_dates: list) -> tuple:
     return min_time, max_time
 
 
-async def new_first_last_date(list_of_dates: list) -> (tuple, bool):
+async def new_first_last_date(list_of_dates: list) -> Union(tuple, bool):
 
     # Higher indices now mean ascending order
     # Skip pruning if there are only two replays

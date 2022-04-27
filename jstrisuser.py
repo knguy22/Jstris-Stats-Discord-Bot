@@ -1,3 +1,4 @@
+from typing import Union
 import requests
 import time
 
@@ -529,7 +530,7 @@ class UserIndivGames:
 
         return False
 
-    def last_time_in_page(self) -> [int, float, str]:
+    def last_time_in_page(self) -> Union[int, float, str]:
 
         """
         :return last time in seconds or score in points of the page

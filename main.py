@@ -1,4 +1,5 @@
 import os
+from typing import Union
 
 import discord
 from discord.ext import commands, tasks
@@ -639,7 +640,7 @@ class VsCommands(commands.Cog):
         os.remove("versusmatchupreplays.txt")
 
     @staticmethod
-    async def vs_matchup_embed(ctx, username: str, opponent: str, list_of_opponents: dict) -> [None, discord.Embed]:
+    async def vs_matchup_embed(ctx, username: str, opponent: str, list_of_opponents: dict) -> Union[None, discord.Embed]:
         embed = await embed_init(username)
 
         if opponent in list_of_opponents:

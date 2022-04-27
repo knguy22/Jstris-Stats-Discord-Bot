@@ -1,4 +1,3 @@
-from ast import alias
 import os
 
 import discord
@@ -709,7 +708,7 @@ async def clear_unaccessed_replays() -> None:
 
 
 @BadgerBot.command()
-async def totalgametime(ctx, username: str, first_date='0001-01-01 00:00:01', last_date='9999-01-01 00:00:00') -> None:
+async def totalgametime(ctx, username: str, *args) -> None:
     """
     Returns total game time of all indiv and versus modes
 
@@ -727,17 +726,15 @@ async def totalgametime(ctx, username: str, first_date='0001-01-01 00:00:01', la
     await GeneralMaintenance.num_processes_init(ctx)
     total_time = 0
     embed = await embed_init(username)
-    dates = DateInit(first_date, last_date)
 
     if not await jstrisfunctions.check_user_exists(username):
         await init_message.delete()
         await ctx.send(ctx.author.mention)
         await ctx.send(f'Not valid username: {username}')
         return None
-
     for gamemode in all_gamemodes:
 
-        dates_tuple = (dates.first, dates.last, gamemode)
+        dates_tuple = args + (gamemode,)
         if gamemode != 'vs':
             curr_gamemode = CacheInit(username, IndivParameterInit(dates_tuple), lock)
         else:

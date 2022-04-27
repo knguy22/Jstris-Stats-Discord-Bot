@@ -1,4 +1,5 @@
 import datetime
+from re import L
 import pytz
 import jstrishtml
 import logging
@@ -566,27 +567,15 @@ def most_(list_of_runs: list, my_param: str) -> dict:
 
 def average_(list_of_runs: list, my_param: str) -> [float, str]:
 
-    # Converts time to datetime to prepare everything
-    if my_param == "time" or my_param == '20tsd time':
-        new_list_of_runs = []
-        for i in list_of_runs:
-            # Sometimes time is not saved
-            if i[my_param] != '-':
-                new_list_of_runs.append({'seconds': jstrishtml.clock_to_seconds(i[my_param])})
-        my_param = 'seconds'
-        list_of_runs = new_list_of_runs
+    if my_param not in ("time", "20tsd time"):
+        list_of_stats = [x[my_param] for x in list_of_runs]
+        data_avg = round(sum(list_of_stats)/len(list_of_stats), 2)
+    else:
+        list_of_stats = [jstrishtml.clock_to_seconds(x[my_param]) for x in list_of_runs if x[my_param] != '-']
+        data_avg = round(sum(list_of_stats)/len(list_of_stats), 2)
+        data_avg = jstrishtml.seconds_to_clock(data_avg)
 
-    stat_average = 0
-    numgames = 0
-    for i in list_of_runs:
-        stat_average += i[my_param]
-        numgames += 1
-    if my_param == "seconds":
-        if '.' in str(datetime.timedelta(seconds=round(stat_average / numgames, 2))):
-            return str(datetime.timedelta(seconds=round(stat_average / numgames, 2)))[:-3]
-        return str(datetime.timedelta(seconds=round(stat_average / numgames, 2)))
-    return round(stat_average/len(list_of_runs), 2)
-
+    return data_avg
 
 def pc_finish_sprint(list_of_runs: list, mode: str) -> dict:
     lines = 0

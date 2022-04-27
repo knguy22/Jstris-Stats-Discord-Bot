@@ -5,7 +5,6 @@ from typing import Union
 import pytz
 
 import jstrisfunctions
-import jstrishtml
 from jstrisfunctions import DateInit, IndivParameterInit
 
 from jstrisuser import UserLiveGames
@@ -348,7 +347,7 @@ class CacheInit:
                 if type(self.params) == jstrisfunctions.VersusParameterInit:
                     self.returned_replays[i][param] = j[param]
                 elif type(self.params) == jstrisfunctions.IndivParameterInit:
-                    self.returned_replays[i][param] = jstrishtml.clock_to_seconds(j[param])
+                    self.returned_replays[i][param] = jstrisfunctions.DateInit.clock_to_seconds(j[param])
 
         filtered_replays = []
         for i in replays:
@@ -373,7 +372,7 @@ class CacheInit:
         elif param == 'time':
             if type(self.params) == jstrisfunctions.IndivParameterInit:
                 for i, j in enumerate(self.returned_replays):
-                    self.returned_replays[i][param] = jstrishtml.seconds_to_clock(j[param])
+                    self.returned_replays[i][param] = jstrisfunctions.DateInit.seconds_to_clock(j[param])
 
     @staticmethod
     async def replace_decimals(obj):

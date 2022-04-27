@@ -173,58 +173,5 @@ def my_float(s: str) -> float:
     s = float(s[4:s_end])
     return round(s, 2)
 
-
-def clock_to_seconds(s: str) -> float:
-    """
-    Input:
-        string: {a}:{b}.{c} where a = minutes, b = seconds, c = milliseconds rounded to 3 digits
-    Output:
-        float: time in seconds
-    """
-    # format
-    # 1:43.365
-    minutes = 0
-    milliseconds = 0
-    colonindex = -1
-    periodindex = len(s)
-    if ':' in s:
-        colonindex = s.index(":")
-        minutes = int(s[: colonindex])
-    if '.' in s:
-        periodindex = s.index(".")
-        milliseconds = float(s[periodindex + 1:]) / 1000
-    seconds = int(s[colonindex + 1: periodindex])
-
-    return round(60 * minutes + seconds + milliseconds, 3)
-
-
-def seconds_to_timestr(s: float) -> str:
-    m, s = divmod(s, 60)
-    h, m = divmod(m, 60)
-    s = round(s, 3)
-    m = int(m)
-    h = int(h)
-
-    s = str(s)
-    if float(s) < 10:
-        s = "0" + s
-    # Adds 0 to end to add thousandth place (Ex: 0.22 -> 0.220)
-    if len(s) == 5:
-        s += '0'
-
-    m = str(m)
-    if int(m) < 10:
-        m = "0" + m
-
-    h = str(h)
-    if int(h) < 10:
-        h = "0" + h
-
-    return f'{h} hours, {m} minutes, {s} seconds'
-
-
-def seconds_to_clock(s: float) -> str:
-    return str(datetime.timedelta(seconds=s))[2:-3]
-
 if __name__ == "__main__":
     pass

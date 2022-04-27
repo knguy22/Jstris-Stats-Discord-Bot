@@ -8,8 +8,7 @@ import threading
 import logging
 
 import jstrisfunctions
-import jstrishtml
-from jstrisfunctions import VersusParameterInit, IndivParameterInit, DateInit, check_user_exists
+from jstrisfunctions import VersusParameterInit, IndivParameterInit, DateInit
 import cache
 from cache import CacheInit
 
@@ -308,9 +307,9 @@ class IndivCommands(commands.Cog):
                 games_criteria = [x[criteria] for x in games]
                 data_avg = statistics.median(games_criteria)
             else:
-                games_criteria = [jstrishtml.clock_to_seconds(x[criteria]) for x in games if x[criteria] != '-']
+                games_criteria = [DateInit.clock_to_seconds(x[criteria]) for x in games if x[criteria] != '-']
                 data_avg = statistics.median(games_criteria)
-                data_avg = jstrishtml.seconds_to_clock(data_avg)
+                data_avg = DateInit.seconds_to_clock(data_avg)
             embed.add_field(name=f"**{criteria}**", value=str(data_avg), inline=False)
 
         embed.add_field(name='**games:**', value=str(len(games)), inline=False)
@@ -751,12 +750,12 @@ async def totalgametime(ctx, username: str, *args) -> None:
             elif gamemode == 'ultra':
                 gamemode_total_time += 120
             else:
-                gamemode_total_time += jstrishtml.clock_to_seconds(replay['time'])
-        embed.add_field(name=f'**{gamemode}:**', value=jstrishtml.seconds_to_timestr(gamemode_total_time), inline=True)
+                gamemode_total_time += DateInit.clock_to_seconds(replay['time'])
+        embed.add_field(name=f'**{gamemode}:**', value=DateInit.seconds_to_timestr(gamemode_total_time), inline=True)
 
         total_time += gamemode_total_time
 
-    total_time = jstrishtml.seconds_to_timestr(total_time)
+    total_time = DateInit.seconds_to_timestr(total_time)
     embed.add_field(name=f'**total time:**', value=total_time, inline=True)
 
     embed.set_footer(text='Units are hours, minutes, and seconds.'

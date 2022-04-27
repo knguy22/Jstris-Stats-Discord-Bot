@@ -553,7 +553,7 @@ class UserIndivGames:
             return 0
         else:
             if self.game != "5":
-                return clock_to_seconds(time_string(self.page_request[lasttimeindex]))
+                return jstrisfunctions.DateInit.clock_to_seconds(time_string(self.page_request[lasttimeindex]))
             elif self.game == "5":
                 return td_int(self.page_request[lasttimeindex])
 

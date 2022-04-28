@@ -1,0 +1,7 @@
+###### Requirements without Version Specifiers ######
+discord.py
+asyncio
+aiofiles
+pytz
+requests
+scipy

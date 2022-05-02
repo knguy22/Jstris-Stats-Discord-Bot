@@ -88,6 +88,8 @@ class UserLiveGames:
         while self.still_searching is True:
             url = f"https://jstris.jezevec10.com/api/u/{self.username}/live/games?offset={self.offset}"
             self.request_games(url)
+            if len(self.page_request) < 50:
+                self.still_searching = False
             self.append_replays()
             self.offset += 50
 
@@ -176,14 +178,16 @@ class UserLiveGames:
         """
         logging.info(f"Getting url: {url}")
         r = self.my_session.get(url, headers=headers)
-        self.page_request = r.json()
+        try:
+            self.page_request = r.json()
+        except ValueError:
+            self.page_request = r.text
         time.sleep(1.5)
-        if len(self.page_request) < 50:
-            self.still_searching = False
 
     def check_username_exists(self) -> None:
-        time.sleep(2)
         
+        time.sleep(2)
+
         my_url = f"https://jstris.jezevec10.com/u/{self.username}"
         self.request_games(url=my_url)
         if "<title>jstris.jezevec10.com | 522: Connection timed out</title>\n" in self.page_request:

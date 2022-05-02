@@ -1,6 +1,5 @@
 from typing import Union
 import datetime
-from re import L
 import pytz
 import jstrishtml
 import logging

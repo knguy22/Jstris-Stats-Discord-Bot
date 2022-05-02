@@ -5,7 +5,7 @@ from typing import Union
 import pytz
 
 import jstrisfunctions
-from jstrisfunctions import DateInit, IndivParameterInit
+from jstrisfunctions import DateInit
 
 from jstrisuser import UserLiveGames
 from jstrisuser import UserIndivGames

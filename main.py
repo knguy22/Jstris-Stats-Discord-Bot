@@ -17,6 +17,7 @@ import aiofiles
 import json
 import random
 import statistics
+import scipy
 
 intents = discord.Intents.default()
 intents.members = True
@@ -264,6 +265,29 @@ class IndivCommands(commands.Cog):
                 os.remove(f'{username}_{counter}.json')
                 counter += 1
                 searched_games.returned_replays = searched_games.returned_replays[20000:]
+                
+    @commands.command()
+    async def graph(self, ctx, username: str, *args) -> None:
+
+        logging.info("Executing graph")
+        if not await GeneralMaintenance.num_processes_init(ctx):
+            return None
+        
+        x_axis = {'sprint': 'time', 'cheese': 'time', 'survival': 'time-R', 'ultra': 'score', '20tsd-R': 'tsds', 'pcmode': 'pcs-R'}
+
+        my_ps = IndivParameterInit(args)
+
+        init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
+        searched_games = CacheInit(username, my_ps, lock)
+        await searched_games.fetch_all_games()
+
+        await init_message.delete()
+        if searched_games.has_error:
+            await ctx.send(ctx.author.mention)
+            await ctx.send(searched_games.error_message)
+        else:
+            pass
+            
 
     @staticmethod
     async def replay_send(ctx, my_ps: dict) -> None:

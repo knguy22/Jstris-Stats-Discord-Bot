@@ -1,5 +1,3 @@
-import datetime
-
 # Jstris html data conversions
 
 

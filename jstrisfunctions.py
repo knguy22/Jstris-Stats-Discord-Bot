@@ -1,3 +1,4 @@
+from sqlite3 import DataError
 from typing import Union
 import datetime
 import pytz
@@ -584,7 +585,7 @@ def least_(list_of_runs: list, my_param: str) -> dict:
 
     if my_param == "time":
         my_param = 'seconds'
-        list_of_seconds = list(map(lambda x: jstrishtml.clock_to_seconds(x['time']), list_of_runs))
+        list_of_seconds = list(map(lambda x: DateInit.clock_to_seconds(x['time']), list_of_runs))
         for c, my_second in enumerate(list_of_seconds):
             list_of_runs[c]['seconds'] = my_second
 
@@ -603,7 +604,7 @@ def most_(list_of_runs: list, my_param: str) -> dict:
 
     if my_param == "time":
         my_param = 'seconds'
-        list_of_seconds = list(map(lambda x: jstrishtml.clock_to_seconds(x['time']), list_of_runs))
+        list_of_seconds = list(map(lambda x: DateInit.clock_to_seconds(x['time']), list_of_runs))
         for c, my_second in enumerate(list_of_seconds):
             list_of_runs[c]['seconds'] = my_second
 
@@ -625,7 +626,7 @@ def average_(list_of_runs: list, my_param: str) -> Union[float, str]:
         list_of_stats = [x[my_param] for x in list_of_runs]
         data_avg = round(sum(list_of_stats)/len(list_of_stats), 2)
     else:
-        list_of_stats = [jstrishtml.clock_to_seconds(x[my_param]) for x in list_of_runs if x[my_param] != '-']
+        list_of_stats = [DateInit.clock_to_seconds(x[my_param]) for x in list_of_runs if x[my_param] != '-']
         data_avg = round(sum(list_of_stats)/len(list_of_stats), 2)
         data_avg = jstrishtml.seconds_to_clock(data_avg)
 

@@ -1,4 +1,3 @@
-from sqlite3 import DataError
 from typing import Union
 import datetime
 import pytz
@@ -628,7 +627,7 @@ def average_(list_of_runs: list, my_param: str) -> Union[float, str]:
     else:
         list_of_stats = [DateInit.clock_to_seconds(x[my_param]) for x in list_of_runs if x[my_param] != '-']
         data_avg = round(sum(list_of_stats)/len(list_of_stats), 2)
-        data_avg = jstrishtml.seconds_to_clock(data_avg)
+        data_avg = DateInit.seconds_to_clock(data_avg)
 
     return data_avg
 

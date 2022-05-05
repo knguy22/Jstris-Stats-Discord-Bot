@@ -166,12 +166,14 @@ class IndivCommands(commands.Cog):
         await searched_games.fetch_all_games()
 
         await init_message.delete()
-        await ctx.send(ctx.author.mention)
+        
 
         if searched_games.has_error:
+            await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
         else:
             embed = await self.average_indiv_embed(username, data_criteria, searched_games.returned_replays)
+            await ctx.send(ctx.author.mention)
             await ctx.send(embed=embed)
         logging.info("Finishing average")
 
@@ -201,12 +203,13 @@ class IndivCommands(commands.Cog):
         await searched_games.fetch_all_games()
 
         await init_message.delete()
-        await ctx.send(ctx.author.mention)
 
         if searched_games.has_error:
+            await ctx.send(ctx.author.mention)
             await ctx.send(searched_games.error_message)
         else:
             embed = await self.median_indiv_embed(username, data_criteria, searched_games.returned_replays)
+            await ctx.send(ctx.author.mention)
             await ctx.send(embed=embed)
         logging.info("Finishing median")
     

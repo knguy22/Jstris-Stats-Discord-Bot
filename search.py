@@ -18,9 +18,12 @@ def get_all_games(game_num: str, mode_num: str, gamemode_name:str, dirname:str):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     
+    c = 0
     for player in all_usernames:
+        c += 1
         if os.path.exists(f"{dirname}/{player}.json"):
             continue
+        print(f"{c}. {player}")
         
         curr = cache.CacheInit(player, params, LOCK)
         LOOP.run_until_complete(curr.fetch_all_games())

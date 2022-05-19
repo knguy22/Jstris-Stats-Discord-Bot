@@ -195,6 +195,8 @@ class DateInit:
     
     @staticmethod
     def seconds_to_clock(s: float) -> str:
+        if int(s) == s:
+            return f"0:{s}"
         return str(datetime.timedelta(seconds=s))[2:-3]
 
     @staticmethod
@@ -878,4 +880,5 @@ async def check_user_exists(username:str) -> bool:
     return True
 
 if __name__ == "__main__":
+    print(DateInit.clock_to_seconds("0:27.0"))
     pass

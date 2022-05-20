@@ -40,6 +40,9 @@ class CacheInit:
 
         self.has_error = False
         self.error_message = ""
+        
+        if not os.path.exists("playerstats"):
+            os.mkdir("playerstats")
 
     async def fetch_all_games(self) -> None:
 

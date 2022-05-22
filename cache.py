@@ -43,6 +43,12 @@ class CacheInit:
         
         if not os.path.exists("playerstats"):
             os.mkdir("playerstats")
+            
+        # Gamemode key tells which replays to check (ie cheese or vs or ultra)
+        if isinstance(self.params, jstrisfunctions.VersusParameterInit):
+            self.gamemode_key = 'vs'
+        elif isinstance(self.params, jstrisfunctions.IndivParameterInit):
+            self.gamemode_key = self.params_to_str_key(self.params)
 
     async def fetch_all_games(self) -> None:
 
@@ -55,7 +61,7 @@ class CacheInit:
         if isinstance(self.params, jstrisfunctions.VersusParameterInit):
             self.gamemode_key = 'vs'
         elif isinstance(self.params, jstrisfunctions.IndivParameterInit):
-            self.gamemode_key = await self.params_to_str_key(self.params)
+            self.gamemode_key = self.params_to_str_key(self.params)
 
         logging.info(self.params)
         logging.info(self.gamemode_key)
@@ -178,7 +184,7 @@ class CacheInit:
         # Stores all replays into cache
         if not self.has_error:
 
-            self.user_dict[await self.params_to_str_key(self.params)] = \
+            self.user_dict[self.gamemode_key] = \
                 {'date': final_date, 'replays': self.fetched_and_cached_replays,
                  'date accessed': final_date}
             await self.store_player_stats(self.user_dict)
@@ -402,7 +408,7 @@ class CacheInit:
             return obj
 
     @staticmethod
-    async def params_to_str_key(params: jstrisfunctions.IndivParameterInit) -> str:
+    def params_to_str_key(params: jstrisfunctions.IndivParameterInit) -> str:
         """
         Assigns gamemode key based on params.game
         :param params: IndivParameterInit

@@ -24,7 +24,7 @@ intents.members = True
 description = 'Third party BadgerBot to quickly gather Jstris stats on individual players'
 BadgerBot = commands.Bot(command_prefix='?', description=description, intents=intents, help_command=None)
 
-lock = asyncio.Lock()
+LOCK = asyncio.Lock()
 
 logging.basicConfig(level=logging.INFO, filename="logjstris.log", datefmt='%m/%d/%Y %H:%M:%S',
                     format='%(levelname)s: %(module)s: %(message)s; %(asctime)s')
@@ -82,7 +82,7 @@ class GeneralMaintenance(commands.Cog):
         :return:
         """
         logging.info('pruning start')
-        await cache.prune_user(lock, username)
+        await cache.prune_user(LOCK, username)
         await ctx.send(f"Pruned {username}")
         logging.info('pruning done')
 
@@ -103,7 +103,7 @@ class IndivCommands(commands.Cog):
         my_ps = IndivParameterInit(args)
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, my_ps, lock)
+        searched_games = CacheInit(username, my_ps, LOCK)
         await searched_games.fetch_all_games()
 
         await init_message.delete()
@@ -127,7 +127,7 @@ class IndivCommands(commands.Cog):
         my_ps = IndivParameterInit(args)
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, my_ps, lock)
+        searched_games = CacheInit(username, my_ps, LOCK)
         await searched_games.fetch_all_games()
 
         await init_message.delete()
@@ -162,7 +162,7 @@ class IndivCommands(commands.Cog):
             return None
         
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, my_ps, lock)
+        searched_games = CacheInit(username, my_ps, LOCK)
         await searched_games.fetch_all_games()
 
         await init_message.delete()
@@ -199,7 +199,7 @@ class IndivCommands(commands.Cog):
             return None
         
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, my_ps, lock)
+        searched_games = CacheInit(username, my_ps, LOCK)
         await searched_games.fetch_all_games()
 
         await init_message.delete()
@@ -222,7 +222,7 @@ class IndivCommands(commands.Cog):
         my_ps = IndivParameterInit(args)
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, my_ps, lock)
+        searched_games = CacheInit(username, my_ps, LOCK)
         await searched_games.fetch_all_games()
 
         await init_message.delete()
@@ -250,7 +250,7 @@ class IndivCommands(commands.Cog):
         
         my_ps = IndivParameterInit(args)
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, my_ps, lock)
+        searched_games = CacheInit(username, my_ps, LOCK)
         await searched_games.fetch_all_games()
         await init_message.delete()
 
@@ -281,7 +281,7 @@ class IndivCommands(commands.Cog):
         my_ps = IndivParameterInit(args)
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, my_ps, lock)
+        searched_games = CacheInit(username, my_ps, LOCK)
         await searched_games.fetch_all_games()
 
         await init_message.delete()
@@ -365,7 +365,7 @@ class VsCommands(commands.Cog):
         param_init = VersusParameterInit(args)
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, param_init, lock)
+        searched_games = CacheInit(username, param_init, LOCK)
         await searched_games.fetch_all_games()
         searched_games.returned_replays = searched_games.returned_replays[:param_init.offset]
 
@@ -431,7 +431,7 @@ class VsCommands(commands.Cog):
         param_init = VersusParameterInit(args)
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, param_init, lock)
+        searched_games = CacheInit(username, param_init, LOCK)
         await searched_games.fetch_all_games()
         searched_games.returned_replays = searched_games.returned_replays[:param_init.offset]
 
@@ -488,7 +488,7 @@ class VsCommands(commands.Cog):
             return None
 
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, param_init, lock)
+        searched_games = CacheInit(username, param_init, LOCK)
         await searched_games.fetch_all_games()
 
         await init_message.delete()
@@ -555,7 +555,7 @@ class VsCommands(commands.Cog):
 
         # Username's games
         logging.info(f"Beginning {username}")
-        searched_games = CacheInit(username, param_init, lock)
+        searched_games = CacheInit(username, param_init, LOCK)
         await searched_games.fetch_all_games()
 
         if searched_games.has_error:
@@ -569,7 +569,7 @@ class VsCommands(commands.Cog):
         # Opponent's games
         logging.info(f"Beginning {opponent}, first: {list_of_opponents[opponent]['min_time']}, "
                      f"last: {list_of_opponents[opponent]['max_time']}")
-        searched_games = CacheInit(opponent, param_init, lock)
+        searched_games = CacheInit(opponent, param_init, LOCK)
         await searched_games.fetch_all_games()
 
         if searched_games.has_error:
@@ -597,7 +597,7 @@ class VsCommands(commands.Cog):
         
         my_ps = VersusParameterInit(args)
         init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
-        searched_games = CacheInit(username, my_ps, lock)
+        searched_games = CacheInit(username, my_ps, LOCK)
         await searched_games.fetch_all_games()
         await init_message.delete()
 
@@ -629,7 +629,7 @@ class VsCommands(commands.Cog):
 
         # Username's games
         logging.info(f"Beginning {username}")
-        searched_games = CacheInit(username, param_init, lock)
+        searched_games = CacheInit(username, param_init, LOCK)
         await searched_games.fetch_all_games()
 
         if searched_games.has_error:
@@ -730,7 +730,7 @@ async def clear_unaccessed_replays() -> None:
     :return:
     """
     logging.info('pruning start')
-    await cache.prune_unused_stats(lock)
+    await cache.prune_unused_stats(LOCK)
     logging.info('pruning done')
 
 
@@ -763,9 +763,9 @@ async def totalgametime(ctx, username: str, *args) -> None:
 
         dates_tuple = args + (gamemode,)
         if gamemode != 'vs':
-            curr_gamemode = CacheInit(username, IndivParameterInit(dates_tuple), lock)
+            curr_gamemode = CacheInit(username, IndivParameterInit(dates_tuple), LOCK)
         else:
-            curr_gamemode = CacheInit(username, VersusParameterInit(dates_tuple), lock)
+            curr_gamemode = CacheInit(username, VersusParameterInit(dates_tuple), LOCK)
         await curr_gamemode.fetch_all_games()
 
         gamemode_total_time = 0

@@ -17,7 +17,7 @@ import aiofiles
 import json
 import random
 import statistics
-import scipy
+import requests
 
 intents = discord.Intents.default()
 intents.members = True
@@ -749,7 +749,7 @@ async def totalgametime(ctx, username: str, *args) -> None:
     init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
 
     all_gamemodes = ['sprint20', 'sprint40', 'sprint100', 'sprint1000', 'cheese10', 'cheese18', 'cheese100', 'ultra',
-                     'survival', '20tsd', 'pcmode', 'vs']
+                     'survival', '20tsd', 'pcmode']
     await GeneralMaintenance.num_processes_init(ctx)
     total_time = 0
     embed = await embed_init(username)
@@ -759,32 +759,31 @@ async def totalgametime(ctx, username: str, *args) -> None:
         await ctx.send(ctx.author.mention)
         await ctx.send(f'Not valid username: {username}')
         return None
+    
+    # Indiv gamemodes, adds time in seconds
     for gamemode in all_gamemodes:
-
         dates_tuple = args + (gamemode,)
-        if gamemode != 'vs':
-            curr_gamemode = CacheInit(username, IndivParameterInit(dates_tuple), LOCK)
-        else:
-            curr_gamemode = CacheInit(username, VersusParameterInit(dates_tuple), LOCK)
+        curr_gamemode = CacheInit(username, IndivParameterInit(dates_tuple), LOCK)
         await curr_gamemode.fetch_all_games()
 
         gamemode_total_time = 0
         for replay in curr_gamemode.returned_replays:
-            if gamemode == 'vs':
-                gamemode_total_time += float(replay['time'])
-            elif gamemode == 'pcmode':
+            if gamemode == 'pcmode':
                 gamemode_total_time += replay['blocks'] / replay['pps']
             elif gamemode == 'ultra':
                 gamemode_total_time += 120
             else:
                 gamemode_total_time += DateInit.clock_to_seconds(replay['time'])
         embed.add_field(name=f'**{gamemode}:**', value=DateInit.seconds_to_timestr(gamemode_total_time), inline=True)
-
         total_time += gamemode_total_time
+
+    # Vs gametime stored in profile
+    vs_time = await totalgametime_vshelper(username)
+    embed.add_field(name=f'**vs:**', value=DateInit.seconds_to_timestr(vs_time), inline=True)
+    total_time += vs_time
 
     total_time = DateInit.seconds_to_timestr(total_time)
     embed.add_field(name=f'**total time:**', value=total_time, inline=True)
-
     embed.set_footer(text='Units are hours, minutes, and seconds.'
                           'Total time does not count uncompleted replays. Due to how jstris stores replays, only the '
                           'top 200 pcmode and 20tsd replays will be counted.')
@@ -792,6 +791,22 @@ async def totalgametime(ctx, username: str, *args) -> None:
     await init_message.delete()
     await ctx.send(ctx.author.mention)
     await ctx.send(embed=embed)
+
+async def totalgametime_vshelper(username: str) -> float:
+    with open('header.txt', 'r') as h:
+        header = h.readline()
+        header = header.replace('\n', '')
+    headers = {'User-Agent': header}
+    
+    session = requests.session()
+    link = f'https://jstris.jezevec10.com/api/u/{username}/live'
+    r = session.get(link, headers=headers)
+    hours = r.json()["totaltime"]    
+    
+    # Returns seconds
+    return hours * 3600
+            
+    
     
 
 if __name__ == "__main__":

@@ -778,7 +778,17 @@ async def totalgametime(ctx, username: str, *args) -> None:
         total_time += gamemode_total_time
 
     # Vs gametime stored in profile
-    vs_time = await totalgametime_vshelper(username)
+    dates_tuple = args + ('vs',)
+    vs_params = VersusParameterInit(dates_tuple)
+    vs_time = 0
+    if vs_params.first_date == '0001-01-01 00:00:00' and vs_params.last_date == "9999-01-01 00:00:00":
+        vs_time = await totalgametime_vshelper(username)
+    else:
+        vs_gamemode = CacheInit(username, vs_params, LOCK)
+        await curr_gamemode.fetch_all_games()
+        for replay in vs_gamemode.returned_replays:
+            vs_time += float(replay['time'])
+        
     embed.add_field(name=f'**vs:**', value=DateInit.seconds_to_timestr(vs_time), inline=True)
     total_time += vs_time
 

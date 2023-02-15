@@ -92,6 +92,58 @@ class GeneralMaintenance(commands.Cog):
 class IndivCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        
+    @commands.command()
+    async def first(self, ctx, username: str, *args) -> None:
+
+        logging.info("Executing first")
+        if not await GeneralMaintenance.num_processes_init(ctx):
+            return None
+
+        my_ps = IndivParameterInit(args)
+
+        init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
+        searched_games = CacheInit(username, my_ps, LOCK)
+        await searched_games.fetch_all_games()
+
+        await init_message.delete()
+        if searched_games.has_error:
+            await ctx.send(ctx.author.mention)
+            await ctx.send(searched_games.error_message)
+        else:
+            list_of_dates = list(map(lambda x: jstrisfunctions.DateInit.str_to_datetime(x['date (CET)']), searched_games.returned_replays))
+            min_date = jstrisfunctions.DateInit.datetime_to_str_naive(min(list_of_dates))
+            replay = [i for i in searched_games.returned_replays if i['date (CET)'] == min_date][0]
+            await ctx.send(ctx.author.mention)
+            await IndivCommands.replay_send(ctx, replay)
+
+        logging.info("Finish first")
+
+    @commands.command()
+    async def last(self, ctx, username: str, *args) -> None:
+
+        logging.info("Executing last")
+        if not await GeneralMaintenance.num_processes_init(ctx):
+            return None
+
+        my_ps = IndivParameterInit(args)
+
+        init_message = await ctx.send(f"Searching {username}'s games now. This can take a while.")
+        searched_games = CacheInit(username, my_ps, LOCK)
+        await searched_games.fetch_all_games()
+
+        await init_message.delete()
+        if searched_games.has_error:
+            await ctx.send(ctx.author.mention)
+            await ctx.send(searched_games.error_message)
+        else:
+            list_of_dates = list(map(lambda x: jstrisfunctions.DateInit.str_to_datetime(x['date (CET)']), searched_games.returned_replays))
+            max_date = jstrisfunctions.DateInit.datetime_to_str_naive(max(list_of_dates))
+            replay = [i for i in searched_games.returned_replays if i['date (CET)'] == max_date][0]
+            await ctx.send(ctx.author.mention)
+            await IndivCommands.replay_send(ctx, replay)
+
+        logging.info("Finish last")
 
     @commands.command(aliases=['min'])
     async def least(self, ctx, username: str, *args) -> None:

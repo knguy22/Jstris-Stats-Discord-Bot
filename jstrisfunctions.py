@@ -256,6 +256,7 @@ class IndivParameterInit:
         self.comparisons = []
         self.has_error = False
         self.error_message = ""
+        self.has_links = None
 
         logging.info(f"IndivParameterInit inputs: {my_tuple}")
 
@@ -300,6 +301,7 @@ class IndivParameterInit:
         # do comparisons; need to do comparisons after defaults are set
         for i in my_tuple:
             self.comparison_init(i)
+            self.has_links_init(i)
 
     def param_init(self, my_param: str, game: str) -> None:
         my_param = my_param.lower()
@@ -434,6 +436,8 @@ class IndivParameterInit:
                 except ValueError:
                     self.has_error = True
                     self.error_message = f'Error: comparison value is not numeric: "{comparison_value}"'
+        elif comparison_param in ('link', 'links'):
+            pass
         elif not self.comparisons and comparison_operator:
             self.has_error = True
             self.error_message = f'Error: comparison parameter "{comparison_param}" is not a valid parameter in your given gamemode: "{self.gamemode}"'
@@ -457,10 +461,17 @@ class IndivParameterInit:
         if not self.first_date and not self.last_date:
             self.first_date = "0001-01-01 00:00:00"
             self.last_date = "9999-01-01 00:00:00"
+    
+    def has_links_init(self, filter):
+        filter = filter.lower()
+        if filter in ("links=true", 'link=true'):
+            self.has_links = True
+        if filter in ("links=false", 'link=false'):
+            self.has_links = False
 
     def __repr__(self) -> str:
         return f"IndivParameterInit({self.gamemode}, {self.game}, {self.mode}, {self.param}," \
-               f" {self.first_date}, {self.last_date}, {self.comparisons}"
+               f" {self.first_date}, {self.last_date}, {self.comparisons}, {self.has_links}"
 
 
 class VersusParameterInit:
@@ -880,5 +891,7 @@ async def check_user_exists(username:str) -> bool:
     return True
 
 if __name__ == "__main__":
-    print(DateInit.clock_to_seconds("0:27.0"))
+    a = IndivParameterInit(("cheese","link=true",))
+    print(a.has_links)
+    print(a.has_error)
     pass

@@ -80,9 +80,9 @@ class CacheInit:
             self.has_error = True
             self.error_message = f'Not valid param type: {self.params}, {type(self.params)}'
         
-        # await self.filter_using_sorting_criteria()
         for i in self.params.comparisons:
             await self.filter_using_sorting_criteria(i)
+        await self.filter_using_has_links(self.params.has_links)
 
         # Final check if replays are empty
         if await self.not_has_games(self.returned_replays) and not self.has_error:
@@ -382,6 +382,14 @@ class CacheInit:
             if type(self.params) == jstrisfunctions.IndivParameterInit:
                 for i, j in enumerate(self.returned_replays):
                     self.returned_replays[i][param] = jstrisfunctions.DateInit.seconds_to_clock(j[param])
+                    
+    async def filter_using_has_links(self, has_links):
+        if has_links == None:
+            return
+        elif has_links == True:
+            self.returned_replays = [i for i in self.returned_replays if i['replay'] not in ('- ', '-')]
+        elif has_links == False:
+            self.returned_replays = [i for i in self.returned_replays if i['replay'] in ('- ', '-')]
 
     @staticmethod
     async def replace_decimals(obj):

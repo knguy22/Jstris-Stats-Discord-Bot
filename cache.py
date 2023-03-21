@@ -153,12 +153,13 @@ class CacheInit:
         
         final_date = DateInit.datetime_to_str_naive(datetime.datetime.now(tz=pytz.timezone('CET')))[:-7]
         
-        await self.fetch_replays_from_cache()
+        # await self.fetch_replays_from_cache()
 
-        if not self.cached_date:
-            first_date = '0001-01-01 00:00:01'
-        else:
-            first_date = self.cached_date
+        # if not self.cached_date:
+        #     first_date = '0001-01-01 00:00:01'
+        # else:
+        #     first_date = self.cached_date
+        first_date = '0001-01-01 00:00:01'
         last_date = '9999-01-01 00:00:00'
 
         # Gathers uncached replays from jstris
@@ -184,10 +185,10 @@ class CacheInit:
         # Stores all replays into cache
         if not self.has_error:
 
-            self.user_dict[self.gamemode_key] = \
-                {'date': final_date, 'replays': self.fetched_and_cached_replays,
-                 'date accessed': final_date}
-            await self.store_player_stats(self.user_dict)
+            # self.user_dict[self.gamemode_key] = \
+            #     {'date': final_date, 'replays': self.fetched_and_cached_replays,
+            #      'date accessed': final_date}
+            # await self.store_player_stats(self.user_dict)
 
             # Returns replays
             self.returned_replays = await self.filter_period_indiv()

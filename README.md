@@ -1,9 +1,7 @@
 # Jstris Stats Discord Bot
 
-Discord bot made to quickly gather player stats from jstris.jezevec10.com. This bot can analyze both singleplayer and versus games. For details about each command, see the following commands document.
+## Overview
 
-https://docs.google.com/document/d/1D54qjRTNmkOBXcvff1vpiph5E5txnd6J6R2oI9e6ZMM/edit#
+This is a Discord bot made to quickly gather player stats from (Jstris)[https://jstris.jezevec10.com], a popular tetris client. For comprehensive documentation about the commands, please refer to this (document)[https://docs.google.com/document/d/1D54qjRTNmkOBXcvff1vpiph5E5txnd6J6R2oI9e6ZMM/edit#].
 
-To join the server with the bot, follow the link below:
-
-https://discord.gg/vdYVCvvKT4
+If you want to simply use the Discord bot, it is located in this (server)[https://discord.gg/vdYVCvvKT4]

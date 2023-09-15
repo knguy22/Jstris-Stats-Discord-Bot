@@ -1,4 +1,4 @@
-# A file meant to show an application of the games fetching functions of this repo
+# A file meant to show an application of the games fetching functions of this repo (I also happen to use this in practical settings lol)
 # This file is not meant to be a part of the main badgerbot 
 
 import os
@@ -54,7 +54,7 @@ def username_init(game: str, mode: str, filename: str) -> list:
     else:
         with open(filename, "r", encoding='utf-8') as f:
             list_of_usernames = f.readlines()
-            list_of_usernames = map(lambda x: x.replace('\n', ''), list_of_usernames)
+    list_of_usernames = [x.replace('\n', '') for x in list_of_usernames]
 
     return list_of_usernames
 

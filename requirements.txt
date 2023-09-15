@@ -1,5 +1,4 @@
-###### Requirements without Version Specifiers ######
-discord.py
+discord.py==1.7.3
 asyncio
 aiofiles
 pytz

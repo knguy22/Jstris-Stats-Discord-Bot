@@ -12,13 +12,13 @@ Each command is sent with a ```?``` prefix, followed by the command name. Then, 
 
 For example, if you want to get an average sprint game's statistics, run ```?avg [username] sprint```. After the bot finishes running, you'll be pinged alongside your results.
 
-<div><img src="https://i.imgur.com/VHGwmQI.png" align="left" height="400" ></div>
+<div><img src="https://i.imgur.com/VHGwmQI.png" height="400" ></div>
 
 You can also add more paremeters limiting to certain dates or even certain block counts. In the following case below, I've added parameters to check average sub 300 cheese runs for a month, using this command:
 ```?avg [username] cheese blocks<300 "date>[min date]" "date<[max date]"```. 
 
-<div><img src="https://i.imgur.com/ZXlTaWh.png" align="left" height="400" ></div>
-  
+<div><img src="https://i.imgur.com/ZXlTaWh.png" height="400" ></div>
+
 For comprehensive documentation about the commands, please refer to this [document](https://docs.google.com/document/d/1D54qjRTNmkOBXcvff1vpiph5E5txnd6J6R2oI9e6ZMM/edit?usp=sharing).
 
 ## Development

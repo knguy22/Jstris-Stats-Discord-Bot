@@ -14,7 +14,7 @@ if not logging.getLogger().hasHandlers():
     logging.basicConfig(level=logging.INFO, filename="logjstris.log", datefmt='%m/%d/%Y %H:%M:%S',
                     format='%(levelname)s: %(module)s: %(message)s; %(asctime)s')
 
-with open('header.txt', 'r') as h:
+with open('../header.txt', 'r') as h:
     header = h.readline()
     header = header.replace('\n', '')
     headers = {

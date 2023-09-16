@@ -1,6 +1,6 @@
 # Jstris Stats Discord Bot 
 
-![Badger Logo](https://i.imgur.com/WDUv9f0.png)
+<a href="url"><img src="https://i.imgur.com/WDUv9f0.png" align="center" height="100" ></a>
 
 ## Overview
 
@@ -12,11 +12,12 @@ Each command is sent with a ```?``` prefix, followed by the command name. Then, 
 
 For example, if you want to get an average sprint game's statistics, run ```?avg [username] sprint```. After the bot finishes running, you'll be pinged alongside your results.
 
-![Default Sprint Command](https://i.imgur.com/VHGwmQI.png)
+<a href="url"><img src="https://i.imgur.com/VHGwmQI.png" align="left" height="100" ></a>
 
-You can also add more paremeters limiting to certain dates or even certain block counts. In the following case below, I've added parameters to check average sub 300 cheese runs for a month, using this command: ```?avg [username] cheese blocks<300 "date>[min date]" "date<[max date]"```.
+You can also add more paremeters limiting to certain dates or even certain block counts. In the following case below, I've added parameters to check average sub 300 cheese runs for a month, using this command:
+```?avg [username] cheese blocks<300 "date>[min date]" "date<[max date]"```.
 
-![Cheese Month](https://i.imgur.com/ZXlTaWh.png)
+<a href="url"><img src="https://i.imgur.com/ZXlTaWh.png" align="left" height="100" ></a>
 
 For comprehensive documentation about the commands, please refer to this [document](https://docs.google.com/document/d/1D54qjRTNmkOBXcvff1vpiph5E5txnd6J6R2oI9e6ZMM/edit?usp=sharing).
 

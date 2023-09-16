@@ -855,7 +855,7 @@ async def totalgametime(ctx, username: str, *args) -> None:
     await ctx.send(embed=embed)
 
 async def totalgametime_vshelper(username: str) -> float:
-    with open('header.txt', 'r') as h:
+    with open('../header.txt', 'r') as h:
         header = h.readline()
         header = header.replace('\n', '')
     headers = {'User-Agent': header}
@@ -882,6 +882,6 @@ if __name__ == "__main__":
     BadgerBot.add_cog(IndivCommands(BadgerBot))
     BadgerBot.add_cog(VsCommands(BadgerBot))
 
-    with open('token.txt', 'r') as r:
+    with open('../token.txt', 'r') as r:
         token = r.readline()
         BadgerBot.run(token)

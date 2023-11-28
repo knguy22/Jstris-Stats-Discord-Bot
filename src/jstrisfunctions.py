@@ -311,7 +311,7 @@ class IndivParameterInit:
             self.has_error = True
             self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "{game}"'
 
-        if game == 'ultra' and my_param == 'score':
+        if game == 'ultra' and my_param in ('score', 'point', 'points'):
             self.param = 'score'
         elif my_param == 'ppb' and game != 'ultra':
             self.has_error = True
@@ -323,7 +323,7 @@ class IndivParameterInit:
             self.has_error = True
             self.error_message = f'Error: parameter "{my_param}" not valid in gamemode "{game}"'
 
-        if game == '20tsd' and my_param == 'tsds':
+        if game == '20tsd' and my_param in ('tsds', 'tsd'):
             self.param = 'tsds'
         elif my_param == 'tsds' and game != '20tsd':
             self.has_error = True
@@ -337,7 +337,7 @@ class IndivParameterInit:
 
         if my_param == 'pps':
             self.param = 'pps'
-        if my_param == 'blocks':
+        if my_param in ('blocks', 'block'):
             self.param = 'blocks'
         if my_param == 'finesse':
             self.param = 'finesse'

@@ -82,7 +82,7 @@ class CacheInit:
         
         for i in self.params.comparisons:
             await self.filter_using_sorting_criteria(i)
-        await self.filter_using_has_links(self.params.has_links)
+        # await self.filter_using_has_links(self.params.has_links)
 
         # Final check if replays are empty
         if await self.not_has_games(self.returned_replays) and not self.has_error:

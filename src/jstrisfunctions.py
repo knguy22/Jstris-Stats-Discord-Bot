@@ -199,6 +199,8 @@ class DateInit:
         minutes = int(total_seconds / 60)
         seconds = int(total_seconds - minutes * 60)
         decimal = round(s - total_seconds, 3)
+        if (decimal == 0):
+            decimal = f"0"
         return f"{minutes}:{seconds}.{decimal}"
 
     @staticmethod
@@ -893,5 +895,5 @@ async def check_user_exists(username:str) -> bool:
     return True
 
 if __name__ == "__main__":
-    print(DateInit.seconds_to_clock(149))
+    print(DateInit.seconds_to_clock(149.0))
     pass

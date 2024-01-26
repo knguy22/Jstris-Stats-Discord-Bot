@@ -195,9 +195,11 @@ class DateInit:
     
     @staticmethod
     def seconds_to_clock(s: float) -> str:
-        if int(s) == s:
-            return f"0:{s}"
-        return str(datetime.timedelta(seconds=s))[2:-3]
+        total_seconds = int(s)
+        minutes = int(total_seconds / 60)
+        seconds = total_seconds - minutes * 60
+        decimal = round(s - total_seconds, 3)
+        return f"{minutes}:{seconds}:{decimal}"
 
     @staticmethod
     def seconds_to_timestr(s: float) -> str:

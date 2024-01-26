@@ -199,6 +199,9 @@ class DateInit:
         minutes = int(total_seconds / 60)
         seconds = total_seconds - minutes * 60
         decimal = round(s - total_seconds, 3)
+
+        if (seconds < 10):
+            seconds = f"0{seconds}"
         return f"{minutes}:{seconds}:{decimal}"
 
     @staticmethod

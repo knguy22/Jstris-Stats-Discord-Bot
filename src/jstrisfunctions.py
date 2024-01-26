@@ -197,7 +197,7 @@ class DateInit:
     def seconds_to_clock(s: float) -> str:
         total_seconds = int(s)
         minutes = int(total_seconds / 60)
-        seconds = total_seconds - minutes * 60
+        seconds = int(total_seconds - minutes * 60)
         decimal = round(s - total_seconds, 3)
 
         return f"{minutes}:{seconds}.{decimal}"

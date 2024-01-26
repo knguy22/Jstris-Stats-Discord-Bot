@@ -200,9 +200,7 @@ class DateInit:
         seconds = total_seconds - minutes * 60
         decimal = round(s - total_seconds, 3)
 
-        if (seconds < 10):
-            seconds = f"0{seconds}"
-        return f"{minutes}:{seconds}:{decimal}"
+        return f"{minutes}:{seconds}.{decimal}"
 
     @staticmethod
     def seconds_to_timestr(s: float) -> str:
@@ -896,7 +894,5 @@ async def check_user_exists(username:str) -> bool:
     return True
 
 if __name__ == "__main__":
-    a = IndivParameterInit(("cheese","link=true",))
-    print(a.has_links)
-    print(a.has_error)
+    print(DateInit.seconds_to_clock(149))
     pass

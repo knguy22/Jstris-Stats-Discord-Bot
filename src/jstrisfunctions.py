@@ -201,6 +201,9 @@ class DateInit:
         decimal = round(s - total_seconds, 3)
         if (decimal == 0):
             decimal = f"0"
+        else:
+            # get rid of leading "0."
+            decimal = str(decimal).replace("0.", "")
         return f"{minutes}:{seconds}.{decimal}"
 
     @staticmethod

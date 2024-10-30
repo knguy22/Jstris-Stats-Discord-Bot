@@ -469,6 +469,11 @@ class UserIndivGames:
         r = self.my_session.get(url, headers=headers)
         self.page_request = r.text
         self.edit_html_request()
+
+        # do some preprocessing to remove left pad and empty rows
+        self.page_request = [i.lstrip() for i in self.page_request]
+        self.page_request = [i for i in self.page_request if i]
+
         time.sleep(1.5)
 
     def edit_html_request(self) -> None:

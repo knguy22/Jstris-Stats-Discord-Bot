@@ -30,14 +30,15 @@ def time_string(s: str) -> str:
         string: time in clock format
     """
 
+    s = s.replace('<td>', '')
+    s = s.replace('</td>', '')
     s = s.replace('<strong>', '')
     s = s.replace('</strong>', '')
 
     # check for minutes with the colon
     if ":" in s:
-        minutes_beg = 4
         minutes_end = s.index(":")
-        minutes = s[minutes_beg: minutes_end]
+        minutes = s[ : minutes_end]
         has_minutes = True
     else:
         minutes = "0"
@@ -48,15 +49,14 @@ def time_string(s: str) -> str:
 
     if "." in s and has_minutes is True:
         milliseconds_beg = s.index("time-mil") + 10
-        milliseconds_end = s.rindex("</span></td>")
+        milliseconds_end = s.rindex("</span>")
         milliseconds = s[milliseconds_beg: milliseconds_end]
         while len(milliseconds) < 3:
             milliseconds += "0"
         has_milliseconds = True
     elif "." in s and has_minutes is False:
         milliseconds_beg = s.index(".") + 1
-        milliseconds_end = s.rindex("</td>")
-        milliseconds = s[milliseconds_beg: milliseconds_end]
+        milliseconds = s[milliseconds_beg : ]
         while len(milliseconds) < 3:
             milliseconds += "0"
         has_milliseconds = True
@@ -70,11 +70,11 @@ def time_string(s: str) -> str:
     if has_minutes:
         seconds_begin = s.index(":") + 1
     else:
-        seconds_begin = 4
+        seconds_begin = 0
     if has_milliseconds:
         seconds_end = s.index(".")
     else:
-        seconds_end = s.rindex("</td>")
+        seconds_end = len(s)
 
     seconds = s[seconds_begin: seconds_end]
 

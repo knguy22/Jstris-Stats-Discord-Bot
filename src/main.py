@@ -63,11 +63,11 @@ class GeneralMaintenance(commands.Cog):
         
         num_processes = threading.active_count() - 3
         logging.info(f"Checking num processes: {num_processes}")
-        if num_processes >= 5:
-            logging.info(f"Max processes reached: {num_processes}")
-            await ctx.send(ctx.author.mention)
-            await ctx.send("Sorry, currently busy handling other requests. Please try again in a few minutes.")
-            return False
+        # if num_processes >= 5:
+        #     logging.info(f"Max processes reached: {num_processes}")
+        #     await ctx.send(ctx.author.mention)
+        #     await ctx.send("Sorry, currently busy handling other requests. Please try again in a few minutes.")
+        #     return False
         logging.info(f"Added one more process: {num_processes}")
         return True
 

@@ -4,11 +4,11 @@ import datetime
 from typing import Union
 import pytz
 
-import jstrisfunctions
-from jstrisfunctions import DateInit
+from lib import jstrisfunctions
+from lib.jstrisfunctions import DateInit
 
-from jstrisuser import UserLiveGames
-from jstrisuser import UserIndivGames
+from lib.jstrisuser import UserLiveGames
+from lib.jstrisuser import UserIndivGames
 import os
 
 import logging

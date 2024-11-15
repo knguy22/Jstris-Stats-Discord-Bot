@@ -1,11 +1,9 @@
 from typing import Union
 import datetime
 import pytz
-import jstrishtml
 import logging
 import operator
 import requests
-import time
 
 logger = logging.getLogger(__name__)
 if not logging.getLogger().hasHandlers():

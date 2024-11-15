@@ -2,8 +2,8 @@ from typing import Union
 import requests
 import time
 
-import jstrisfunctions
-from jstrishtml import *
+from lib import jstrisfunctions
+from lib.jstrishtml import *
 import datetime
 import pytz
 

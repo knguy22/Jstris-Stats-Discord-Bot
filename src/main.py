@@ -7,10 +7,10 @@ import threading
 
 import logging
 
-import jstrisfunctions
-from jstrisfunctions import VersusParameterInit, IndivParameterInit, DateInit
-import cache
-from cache import CacheInit
+from lib import jstrisfunctions
+from lib.jstrisfunctions import VersusParameterInit, IndivParameterInit, DateInit
+from lib import cache
+from lib.cache import CacheInit
 
 import asyncio
 import aiofiles

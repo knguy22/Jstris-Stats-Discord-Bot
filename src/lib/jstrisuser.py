@@ -2,8 +2,8 @@ from typing import Union
 import requests
 import time
 
-import jstrisfunctions
-from jstrishtml import *
+from lib import jstrisfunctions
+from lib.jstrishtml import *
 import datetime
 import pytz
 
@@ -358,7 +358,7 @@ class UserIndivGames:
         c = -1
         while len(self.page_request) - 1 > c:
             c += 1
-            if "<td><strong>" in self.page_request[c] and self.username in self.page_request[c - 2].lower():
+            if "<td><strong>" in self.page_request[c] and self.username.lower() in self.page_request[c - 2].lower():
 
                 # d is an offset for diff stats indices once we find the right c;
                 d = 1

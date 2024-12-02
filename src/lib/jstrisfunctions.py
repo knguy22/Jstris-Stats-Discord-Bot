@@ -263,6 +263,9 @@ class IndivParameterInit:
         self.error_message = ""
         self.has_links = None
 
+        self.sortby = None
+        self.ascending: bool = True
+
         logging.info(f"IndivParameterInit inputs: {my_tuple}")
 
         # NOTE: MY TUPLE MUST CONTAIN MORE THAN ONE INDEX FOR THIS TO WORK; ADD AN EXTRA EMPTY STRING IN THE
@@ -299,14 +302,15 @@ class IndivParameterInit:
                     break
 
         # sets defaults for unspecified settings in my_tuple
-
         self.default_settings()
         logging.info(self)
 
-        # do comparisons; need to do comparisons after defaults are set
+        # other initializations
         for i in my_tuple:
             self.comparison_init(i)
             self.has_links_init(i)
+            self.sortby_init(i)
+            self.asc_init(i)
 
     def param_init(self, my_param: str, game: str) -> None:
         my_param = my_param.lower()
@@ -394,15 +398,7 @@ class IndivParameterInit:
         :return:
         """
 
-        data_criteria = []
-        if self.game in ('1', '3', '4'):
-            data_criteria = ["time", "blocks", "pps", "finesse", "date"]
-        elif self.game == '5':
-            data_criteria = ["score", "blocks", "ppb", "pps", "finesse", "date"]
-        elif self.game == '7':
-            data_criteria = ["tsds", "time", "20tsd time", "blocks", "pps", "date"]
-        elif self.game == '8':
-            data_criteria = ["pcs", "time", "blocks", "pps", "finesse", "date"]
+        data_criteria = self.data_criteria()
 
         comparison_operator = ""
         if ">=" in my_comp:
@@ -441,11 +437,53 @@ class IndivParameterInit:
                 except ValueError:
                     self.has_error = True
                     self.error_message = f'Error: comparison value is not numeric: "{comparison_value}"'
-        elif comparison_param in ('link', 'links'):
+        elif comparison_param in ('link', 'links', 'sortby', 'asc'):
             pass
         elif not self.comparisons and comparison_operator:
             self.has_error = True
             self.error_message = f'Error: comparison parameter "{comparison_param}" is not a valid parameter in your given gamemode: "{self.gamemode}"'
+
+    def sortby_init(self, my_sortby: str):
+        if '=' not in my_sortby:
+            return
+
+        sortby_label = my_sortby[: my_sortby.find('=')]
+        if sortby_label != 'sortby':
+            return
+
+        sortby_param = my_sortby[my_sortby.find('=') + 1:]
+        data_criteria = self.data_criteria()
+        if sortby_param in data_criteria:
+            self.sortby = sortby_param
+        else:
+            self.has_error = True
+            self.error_message = f'Error: sortby parameter "{sortby_param}" is not a valid parameter in your given gamemode: "{self.gamemode}"'
+    
+    def asc_init(self, my_asc: str):
+        if '=' not in my_asc:
+            return
+
+        asc_label = my_asc[: my_asc.find('=')]
+        if asc_label != 'asc':
+            return
+
+        asc_param = my_asc[my_asc.find('=') + 1:].lower()
+        if asc_param == 'true':
+            self.ascending = True
+        elif asc_param == 'false':
+            self.ascending = False
+        else:
+            self.has_error = True
+            self.error_message = f'Error: asc parameter "{asc_param}" is not a valid parameter in your given gamemode: "{self.gamemode}"'
+
+    def data_criteria(self) -> list:
+        if self.game in ('1', '3', '4'):
+            return ["time", "blocks", "pps", "finesse", "date"]
+        elif self.game == '5':
+            return ["score", "blocks", "ppb", "pps", "finesse", "date"]
+        elif self.game == '7':
+            return ["tsds", "time", "20tsd time", "blocks", "pps", "date"]
+        return ["pcs", "time", "blocks", "pps", "finesse", "date"]
 
     def default_settings(self) -> None:
         if self.gamemode == "":

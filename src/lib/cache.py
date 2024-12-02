@@ -86,7 +86,10 @@ class CacheInit:
 
         # perform sorting if applicable
         if type(self.params) == jstrisfunctions.IndivParameterInit and self.params.sortby is not None:
-            self.returned_replays.sort(key=lambda x: x[self.params.sortby], reverse=not self.params.ascending)
+            key = self.params.sortby
+            if self.params.sortby == 'date':
+                key = 'date (CET)'
+            self.returned_replays.sort(key=lambda x: x[key], reverse=not self.params.ascending)
 
         # Final check if replays are empty
         if await self.not_has_games(self.returned_replays) and not self.has_error:

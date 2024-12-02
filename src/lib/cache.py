@@ -79,7 +79,7 @@ class CacheInit:
         else:
             self.has_error = True
             self.error_message = f'Not valid param type: {self.params}, {type(self.params)}'
-        
+
         for i in self.params.comparisons:
             await self.filter_using_sorting_criteria(i)
         # await self.filter_using_has_links(self.params.has_links)
@@ -366,8 +366,12 @@ class CacheInit:
                 exec_bool = True
             elif operator == '>=' and i[param] >= value:
                 exec_bool = True
-            elif operator == '==' and i[param] == value:
-                exec_bool = True
+            elif operator == '==':
+                if param == 'date (CET)':
+                    tmrw: datetime = value + datetime.timedelta(days=1)
+                    exec_bool = value <= i[param] < tmrw
+                else:
+                    exec_bool = i[param] == value
             elif operator == '<' and i[param] < value:
                 exec_bool = True
             elif operator == '>' and i[param] > value:

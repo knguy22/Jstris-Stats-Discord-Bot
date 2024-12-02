@@ -264,7 +264,7 @@ class IndivParameterInit:
         self.has_links = None
 
         self.sortby = None
-        self.ascending = True
+        self.ascending: bool = True
 
         logging.info(f"IndivParameterInit inputs: {my_tuple}")
 

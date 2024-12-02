@@ -84,6 +84,10 @@ class CacheInit:
             await self.filter_using_sorting_criteria(i)
         # await self.filter_using_has_links(self.params.has_links)
 
+        # perform sorting if applicable
+        if type(self.params) == jstrisfunctions.IndivParameterInit and self.params.sortby is not None:
+            self.returned_replays.sort(key=lambda x: x[self.params.sortby], reverse=not self.params.ascending)
+
         # Final check if replays are empty
         if await self.not_has_games(self.returned_replays) and not self.has_error:
             self.has_error = True

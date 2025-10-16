@@ -8,6 +8,7 @@ import datetime
 import pytz
 
 import logging
+import cloudscraper
 
 logger = logging.getLogger(__name__)
 if not logging.getLogger().hasHandlers():
@@ -70,7 +71,7 @@ class UserLiveGames:
         self.still_searching = True
         self.has_error = False
         self.error_message = ""
-        self.my_session = requests.session()
+        self.my_session = cloudscraper.create_scraper()
 
         self.check_username_exists()
         if not self.has_error:
@@ -244,7 +245,7 @@ class UserIndivGames:
                      f"{self.period}, {self.first_date}, {self.last_date}")
 
         self.all_replays = []
-        self.my_session = requests.session()
+        self.my_session = cloudscraper.create_scraper()
         self.page_request = ""
         self.current_last_replay = ""
         self.has_error = False

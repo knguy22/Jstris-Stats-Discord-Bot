@@ -4,3 +4,4 @@ aiofiles==0.8.0
 pytz==2021.3
 requests==2.27.1
 pandas==2.2.3
+cloudscraper==1.2.71
